@@ -85,5 +85,6 @@ distribution_t distribution_clone(distribution_t *d) {
 }
 
 void distribution_destroy(distribution_t *d) {
-
+  free(d->buckets);
+  free(d);
 }
