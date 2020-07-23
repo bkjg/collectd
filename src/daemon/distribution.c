@@ -37,6 +37,10 @@ bucket_t *bucket_new_exponential(size_t num_buckets, double factor) {
   return buckets;
 }
 
+bucket_t *bucket_new_custom(size_t num_buckets, double *custom_buckets_sizes) {
+  return NULL;
+}
+
 distribution_t *distribution_new_linear(size_t num_buckets, double size) {
   distribution_t *d = (distribution_t *) calloc(1, sizeof(distribution_t));
 
@@ -56,7 +60,12 @@ distribution_t *distribution_new_exponential(size_t num_buckets, double factor) 
 }
 
 distribution_t *distribution_new_custom(size_t num_buckets, double *custom_buckets_sizes) {
-  return NULL;
+  distribution_t *d = (distribution_t *) calloc(1, sizeof(distribution_t));
+
+  d->buckets = bucket_new_custom(num_buckets, custom_buckets_sizes);
+  d->num_buckets = num_buckets;
+
+  return d
 }
 
 void distribution_update(distribution_t *d, double gauge) {
