@@ -7,7 +7,7 @@ typedef struct distribution_s distribution_t;
 /* function that create new distribution structure and initialize buckets using linear function */
 distribution_t *distribution_new_linear(size_t num_buckets, double size);
 /* function that create new distribution structure and initialize buckets using exponential function */
-distribution_t *distribution_new_exponential(size_t num_buckets, double initial_size, double factor);
+distribution_t *distribution_new_exponential(size_t num_buckets, double factor);
 /* function that create new distribution structure and initialize buckets using custom buckets sizes given by the user */
 distribution_t* distribution_new_custom(size_t num_buckets, double *custom_buckets_sizes);
 
