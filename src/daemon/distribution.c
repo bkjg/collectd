@@ -1,4 +1,3 @@
-#include "plugin.h"
 #include "distribution.h"
 
 typedef struct {
@@ -11,10 +10,22 @@ struct distribution_s {
   size_t num_buckets;
 };
 
-distribution_t *distribution_new_linear(size_t num_buckets, double size) {
-  distribution_t *d = (distribution_t*) calloc(1, sizeof(distribution_t));
+bucket_t *bucket_new_linear(size_t num_buckets, double size) {
+  bucket_t *buckets = (bucket_t *) calloc(num_buckets, sizeof(bucket_t));
 
-  d->buckets = buckets_new_linear(num_buckets, size);
+  for(size_t i = 0; i < num_buckets; ++i) {
+    buckets[i]->max_boundary = (i + 1) * size; 
+  }
+
+  buckets[num_buckets - 1] = INFINITY;
+
+  return buckets;
+}
+
+distribution_t *distribution_new_linear(size_t num_buckets, double size) {
+  distribution_t *d = (distribution_t *) calloc(1, sizeof(distribution_t));
+
+  d->buckets = bucket_new_linear(num_buckets, size);
   d->num_buckets = num_buckets;
 
   return d;
@@ -41,7 +52,7 @@ double distribution_average(distribution_t *d) {
 }
 
 distribution_t distribution_clone(distribution_t *d) {
-  return (distribution_t){0, 0}
+  return (distribution_t){0, 0};
 }
 
 void distribution_destroy(distribution_t *d) {
