@@ -12,7 +12,12 @@ struct distribution_s {
 };
 
 distribution_t *distribution_new_linear(size_t num_buckets, double size) {
-  return NULL;
+  distribution_t *d = (distribution_t*) calloc(1, sizeof(distribution_t));
+
+  d->buckets = buckets_new_linear(num_buckets, size);
+  d->num_buckets = num_buckets;
+
+  return d;
 }
 
 distribution_t *distribution_new_exponential(size_t num_buckets, double initial_size, double factor) {
