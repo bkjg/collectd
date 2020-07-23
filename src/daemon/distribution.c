@@ -23,7 +23,18 @@ bucket_t *bucket_new_linear(size_t num_buckets, double size) {
 }
 
 bucket_t *bucket_new_exponential(size_t num_buckets, double factor) {
-  return NULL;
+  bucket_t *buckets = (bucket_t *) calloc(num_buckets, sizeof(bucket_t));
+
+  double multiplier = factor;
+
+  for (int i = 0; i < num_buckets; ++i) {
+    buckets[i]->max_boundary = multiplier;
+    multiplier *= factor;
+  }
+
+  buckets[num_buckets - 1] = INFINITY;
+
+  return buckets;
 }
 
 distribution_t *distribution_new_linear(size_t num_buckets, double size) {
