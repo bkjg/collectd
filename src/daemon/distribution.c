@@ -22,6 +22,10 @@ bucket_t *bucket_new_linear(size_t num_buckets, double size) {
   return buckets;
 }
 
+bucket_t *bucket_new_exponential(size_t num_buckets, double factor) {
+  return NULL;
+}
+
 distribution_t *distribution_new_linear(size_t num_buckets, double size) {
   distribution_t *d = (distribution_t *) calloc(1, sizeof(distribution_t));
 
@@ -31,8 +35,13 @@ distribution_t *distribution_new_linear(size_t num_buckets, double size) {
   return d;
 }
 
-distribution_t *distribution_new_exponential(size_t num_buckets, double initial_size, double factor) {
-  return NULL;
+distribution_t *distribution_new_exponential(size_t num_buckets, double factor) {
+  distribution_t *d = (distribution_t *) calloc(1, sizeof(distribution_t));
+
+  d->buckets = bucket_new_exponential(num_buckets, factor);
+  d->num_buckets = num_buckets;
+
+  return d;
 }
 
 distribution_t *distribution_new_custom(size_t num_buckets, double *custom_buckets_sizes) {
