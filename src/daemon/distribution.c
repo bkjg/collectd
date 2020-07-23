@@ -38,7 +38,17 @@ bucket_t *bucket_new_exponential(size_t num_buckets, double factor) {
 }
 
 bucket_t *bucket_new_custom(size_t num_buckets, double *custom_buckets_sizes) {
-  return NULL;
+  bucket_t *buckets = (distribution_t *) calloc(num_buckets, sizeof(distribution_t));
+  double ptr = 0.0;
+
+  for (int i = 0; i < num_buckets - 1; ++i) {
+    ptr += custom_buckets_sizes;
+    buckets[i] = ptr;
+  }
+
+  buckets[num_buckets -1] = INFINITY;
+
+  return buckets;
 }
 
 distribution_t *distribution_new_linear(size_t num_buckets, double size) {
