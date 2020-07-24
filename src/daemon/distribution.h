@@ -21,7 +21,7 @@ double distribution_percentile(distribution_t *d, double percent);
 double distribution_average(distribution_t *d);
 
 /* function that do the clone of distribution structure */
-distribution_t distribution_clone(distribution_t *d);
+distribution_t* distribution_clone(distribution_t *d);
 
 /* function that do clean up and free all the memory */
 void distribution_destroy(distribution_t *d);
