@@ -90,9 +90,14 @@ void bucket_update(bucket_t *buckets, size_t num_buckets, double gauge) {
 }
 
 void distribution_update(distribution_t *d, double gauge) {
+  static pthread_mutex_t mutex;
+  pthread_mutex_lock(&mutex);
+  
   bucket_update(d->buckets, d->num_buckets, gauge);
 
   d->sum_gauges += gauge;
+
+  pthread_mutex_unlock(&mutex);
 }
 
 double find_percentile(bucket_t *buckets, size_t num_buckets, uint64_t quantity) {
