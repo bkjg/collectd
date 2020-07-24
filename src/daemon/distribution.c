@@ -7,6 +7,7 @@ typedef struct {
 
 struct distribution_s {
   bucket_t *buckets;
+  double sum_gauges;
   size_t num_buckets;
 };
 
@@ -90,6 +91,8 @@ void bucket_update(bucket_t *buckets, size_t num_buckets, double gauge) {
 
 void distribution_update(distribution_t *d, double gauge) {
   bucket_update(d->buckets, d->num_buckets, gauge);
+
+  d->sum_gauges += gauge;
 }
 
 double find_percentile(bucket_t *buckets, size_t num_buckets, uint64_t quantity) {
@@ -117,7 +120,7 @@ double distribution_percentile(distribution_t *d, double percent) {
 }
 
 double distribution_average(distribution_t *d) {
-  return 0;
+  return d->sum_gauges / (double) d->buckets[d->num_buckets - 1].counter;
 }
 
 distribution_t distribution_clone(distribution_t *d) {
