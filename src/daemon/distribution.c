@@ -78,8 +78,17 @@ distribution_t *distribution_new_custom(size_t num_buckets, double *custom_bucke
   return d;
 }
 
-void distribution_update(distribution_t *d, double gauge) {
+void bucket_update(bucket_t *buckets, size_t num_buckets, double gauge) {
+  size_t ptr = num_buckets - 1;
 
+  while (buckets[ptr].max_boundary > gauge && ptr >= 0) {
+    buckets[ptr].counter++;
+    ptr--;
+  }
+}
+
+void distribution_update(distribution_t *d, double gauge) {
+  bucket_update(d->buckets, d->num_buckets, gauge);
 }
 
 double distribution_percentile(distribution_t *d, double percent) {
