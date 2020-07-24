@@ -128,8 +128,22 @@ double distribution_average(distribution_t *d) {
   return d->sum_gauges / (double) d->buckets[d->num_buckets - 1].counter;
 }
 
-distribution_t distribution_clone(distribution_t *d) {
-  return (distribution_t){0, 0};
+distribution_t* distribution_clone(distribution_t *d) {
+  pthread_mutex_t mutex;
+  pthread_mutex_lock(&mutex);
+
+  distribution_t *distribution = calloc(1, sizeof(distribution_t));
+
+  distribution->sum_gauges = d->sum_gauges;
+  distribution->num_buckets = d->num_buckets;
+
+  distribution->buckets = calloc(d->num_buckets, sizeof(bucket_t));
+
+  memcpy(distribution->buckets, d->buckets, d->num_buckets * sizeof(bucket_t));
+
+  pthread_mutex_unlock(&mutex);
+  
+  return distribution;
 }
 
 void distribution_destroy(distribution_t *d) {
