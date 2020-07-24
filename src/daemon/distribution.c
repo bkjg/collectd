@@ -78,6 +78,7 @@ distribution_t *distribution_new_custom(size_t num_buckets, double *custom_bucke
   return d;
 }
 
+/* TODO(bkjg): Make the code thread safe */
 void bucket_update(bucket_t *buckets, size_t num_buckets, double gauge) {
   size_t ptr = num_buckets - 1;
 
@@ -91,8 +92,28 @@ void distribution_update(distribution_t *d, double gauge) {
   bucket_update(d->buckets, d->num_buckets, gauge);
 }
 
+double find_percentile(bucket_t *buckets, size_t num_buckets, uint64_t quantity) {
+  size_t left = 0;
+  size_t right = num_buckets - 1;
+  size_t middle;
+
+  while (left < right) {
+    middle = (left + right) / 2;
+    
+    if (buckets[middle].counter >= quantity) {
+      left = middle;
+    } else {
+      right = middle - 1;
+    }
+  }
+
+  return buckets[left].max_boundary;
+}
+
 double distribution_percentile(distribution_t *d, double percent) {
-  return 0;
+  uint64_t quantity = (percent / 100.0) * d->buckets[d->num_buckets - 1].counter;
+
+  return find_percentile(d->buckets, d->num_buckets, quantity);
 }
 
 double distribution_average(distribution_t *d) {
