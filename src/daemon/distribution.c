@@ -85,6 +85,7 @@ distribution_t *distribution_new_linear(size_t num_buckets, double size) {
   }
 
   d->num_buckets = num_buckets;
+  pthread_mutex_init(&d->mutex, NULL);
 
   return d;
 }
@@ -106,6 +107,7 @@ distribution_t *distribution_new_exponential(size_t num_buckets,
   }
 
   d->num_buckets = num_buckets;
+  pthread_mutex_init(&d->mutex, NULL);
 
   return d;
 }
@@ -126,6 +128,7 @@ distribution_t *distribution_new_custom(size_t num_buckets,
   }
 
   d->num_buckets = num_buckets;
+  pthread_mutex_init(&d->mutex, NULL);
 
   return d;
 }
@@ -190,7 +193,7 @@ double distribution_percentile(distribution_t *d, double percent) {
   percent = find_percentile(distribution->buckets, distribution->num_buckets,
                             quantity);
 
-  free(distribution);
+  distribution_destroy(distribution);
   return percent;
 }
 
@@ -210,7 +213,7 @@ double distribution_average(distribution_t *d) {
       distribution->sum_gauges /
       (double)distribution->buckets[distribution->num_buckets - 1].counter;
 
-  free(distribution);
+  distribution_destroy(distribution);
   return average;
 }
 
@@ -242,6 +245,8 @@ distribution_t *distribution_clone(distribution_t *d) {
 
   memcpy(distribution->buckets, d->buckets, d->num_buckets * sizeof(bucket_t));
 
+  pthread_mutex_init(&distribution->mutex, NULL);
+  
   pthread_mutex_unlock(&d->mutex);
 
   return distribution;
@@ -253,6 +258,7 @@ void distribution_destroy(distribution_t *d) {
     return;
   }
 
+  pthread_mutex_destroy(&d->mutex);
   free(d->buckets);
   free(d);
 }
