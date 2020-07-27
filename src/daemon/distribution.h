@@ -6,12 +6,18 @@
 struct distribution_s;
 typedef struct distribution_s distribution_t;
 
-/* function that create new distribution structure and initialize buckets using linear function */
+/* function that create new distribution structure and initialize buckets using
+ * linear function */
 distribution_t *distribution_new_linear(size_t num_buckets, double size);
-/* function that create new distribution structure and initialize buckets using exponential function */
-distribution_t *distribution_new_exponential(size_t num_buckets, double initial_size, double factor);
-/* function that create new distribution structure and initialize buckets using custom buckets sizes given by the user */
-distribution_t* distribution_new_custom(size_t num_buckets, double *custom_buckets_sizes);
+/* function that create new distribution structure and initialize buckets using
+ * exponential function */
+distribution_t *distribution_new_exponential(size_t num_buckets,
+                                             double initial_size,
+                                             double factor);
+/* function that create new distribution structure and initialize buckets using
+ * custom buckets sizes given by the user */
+distribution_t *distribution_new_custom(size_t num_buckets,
+                                        double *custom_buckets_sizes);
 
 /* function for updating the buckets */
 void distribution_update(distribution_t *d, double gauge);
@@ -23,7 +29,7 @@ double distribution_percentile(distribution_t *d, double percent);
 double distribution_average(distribution_t *d);
 
 /* function that do the clone of distribution structure */
-distribution_t* distribution_clone(distribution_t *d);
+distribution_t *distribution_clone(distribution_t *d);
 
 /* function that do clean up and free all the memory */
 void distribution_destroy(distribution_t *d);

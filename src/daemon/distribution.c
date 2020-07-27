@@ -1,6 +1,6 @@
+#include "distribution.h"
 #include <math.h>
 #include <pthread.h>
-#include "distribution.h"
 
 typedef struct {
   double max_boundary;
@@ -24,21 +24,20 @@ static bucket_t *bucket_new_linear(size_t num_buckets, double size) {
   for (size_t i = 0; i < num_buckets - 1; ++i) {
     buckets[i].max_boundary = (double)(i + 1) * size;
   }
-  
+
   buckets[num_buckets - 1].max_boundary = INFINITY;
 
   return buckets;
 }
 
-static bucket_t *bucket_new_exponential(size_t num_buckets,
-                                        double initial_size,
+static bucket_t *bucket_new_exponential(size_t num_buckets, double initial_size,
                                         double factor) {
   bucket_t *buckets = (bucket_t *)calloc(num_buckets, sizeof(bucket_t));
 
   if (buckets == NULL) {
     return NULL;
   }
-  
+
   double multiplier = initial_size;
 
   for (size_t i = 0; i < num_buckets - 1; ++i) {
@@ -58,7 +57,7 @@ static bucket_t *bucket_new_custom(size_t num_buckets,
   if (buckets == NULL) {
     return NULL;
   }
-  
+
   double ptr = 0.0;
 
   for (size_t i = 0; i < num_buckets - 1; ++i) {
@@ -77,7 +76,7 @@ distribution_t *distribution_new_linear(size_t num_buckets, double size) {
   if (d == NULL) {
     return NULL;
   }
-  
+
   d->buckets = bucket_new_linear(num_buckets, size);
 
   if (d->buckets == NULL) {
