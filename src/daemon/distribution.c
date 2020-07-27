@@ -30,18 +30,20 @@ static bucket_t *bucket_new_linear(size_t num_buckets, double size) {
   return buckets;
 }
 
-static bucket_t *bucket_new_exponential(size_t num_buckets, double factor) {
+static bucket_t *bucket_new_exponential(size_t num_buckets,
+                                        double initial_size,
+                                        double factor) {
   bucket_t *buckets = (bucket_t *)calloc(num_buckets, sizeof(bucket_t));
 
   if (buckets == NULL) {
     return NULL;
   }
   
-  double multiplier = factor;
+  double multiplier = initial_size;
 
   for (size_t i = 0; i < num_buckets - 1; ++i) {
-    buckets[i].max_boundary = multiplier;
-    multiplier *= factor;
+    buckets[i].max_boundary = factor * multiplier;
+    multiplier *= initial_size;
   }
 
   buckets[num_buckets - 1].max_boundary = INFINITY;
@@ -89,6 +91,7 @@ distribution_t *distribution_new_linear(size_t num_buckets, double size) {
 }
 
 distribution_t *distribution_new_exponential(size_t num_buckets,
+                                             double initial_size,
                                              double factor) {
   distribution_t *d = (distribution_t *)calloc(1, sizeof(distribution_t));
 
@@ -96,7 +99,7 @@ distribution_t *distribution_new_exponential(size_t num_buckets,
     return NULL;
   }
 
-  d->buckets = bucket_new_exponential(num_buckets, factor);
+  d->buckets = bucket_new_exponential(num_buckets, initial_size, factor);
 
   if (d->buckets == NULL) {
     free(d);
