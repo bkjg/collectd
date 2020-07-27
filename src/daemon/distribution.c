@@ -14,27 +14,28 @@ struct distribution_s {
   pthread_mutex_t mutex;
 };
 
-bucket_t *bucket_new_linear(size_t num_buckets, double size) {
+static bucket_t *bucket_new_linear(size_t num_buckets, double size) {
   bucket_t *buckets = (bucket_t *) calloc(num_buckets, sizeof(bucket_t));
 
   if (buckets != NULL) {
-    for (size_t i = 0; i < num_buckets; ++i) {
-      buckets[i].max_boundary = (i + 1) * size;
+    for (size_t i = 0; i < num_buckets - 1; ++i) {
+      buckets[i].max_boundary = (double)(i + 1) * size;
     }
 
+    /* what if num_buckets is equal to zero? should we do assert or check it somehow? */
     buckets[num_buckets - 1].max_boundary = INFINITY;
   }
 
   return buckets;
 }
 
-bucket_t *bucket_new_exponential(size_t num_buckets, double factor) {
+static bucket_t *bucket_new_exponential(size_t num_buckets, double factor) {
   bucket_t *buckets = (bucket_t *) calloc(num_buckets, sizeof(bucket_t));
 
   if (buckets != NULL) {
     double multiplier = factor;
 
-    for (int i = 0; i < num_buckets; ++i) {
+    for (size_t i = 0; i < num_buckets - 1; ++i) {
       buckets[i].max_boundary = multiplier;
       multiplier *= factor;
     }
@@ -45,13 +46,13 @@ bucket_t *bucket_new_exponential(size_t num_buckets, double factor) {
   return buckets;
 }
 
-bucket_t *bucket_new_custom(size_t num_buckets, const double *custom_buckets_sizes) {
+static bucket_t *bucket_new_custom(size_t num_buckets, const double *custom_buckets_sizes) {
   bucket_t *buckets = (bucket_t *) calloc(num_buckets, sizeof(bucket_t));
 
   if (buckets != NULL) {
     double ptr = 0.0;
 
-    for (int i = 0; i < num_buckets - 1; ++i) {
+    for (size_t i = 0; i < num_buckets - 1; ++i) {
       ptr += custom_buckets_sizes[i];
       buckets[i].max_boundary = ptr;
     }
@@ -88,6 +89,7 @@ distribution_t *distribution_new_custom(size_t num_buckets, double *custom_bucke
   distribution_t *d = (distribution_t *) calloc(1, sizeof(distribution_t));
 
   if (d != NULL) {
+    /* if bucket_new_custom will return NULL, should we return NULL for full function? */
     d->buckets = bucket_new_custom(num_buckets, custom_buckets_sizes);
     d->num_buckets = num_buckets;
   }
@@ -96,9 +98,10 @@ distribution_t *distribution_new_custom(size_t num_buckets, double *custom_bucke
 }
 
 /* TODO(bkjg): Make the code thread safe */
-void bucket_update(bucket_t *buckets, size_t num_buckets, double gauge) {
+static void bucket_update(bucket_t *buckets, size_t num_buckets, double gauge) {
   /* can we assume that we won't receive null pointer as an argument? */
-  size_t ptr = num_buckets - 1;
+  /* can we assume num_buckets is greater than zero? */
+  int ptr = (int)num_buckets - 1;
 
   while (buckets[ptr].max_boundary > gauge && ptr >= 0) {
     buckets[ptr].counter++;
@@ -115,7 +118,7 @@ void distribution_update(distribution_t *d, double gauge) {
   pthread_mutex_unlock(&d->mutex);
 }
 
-double find_percentile(bucket_t *buckets, size_t num_buckets, uint64_t quantity) {
+static double find_percentile(bucket_t *buckets, size_t num_buckets, uint64_t quantity) {
   size_t left = 0;
   size_t right = num_buckets - 1;
   size_t middle;
@@ -134,20 +137,29 @@ double find_percentile(bucket_t *buckets, size_t num_buckets, uint64_t quantity)
 }
 
 double distribution_percentile(distribution_t *d, double percent) {
-  uint64_t quantity = (percent / 100.0) * d->buckets[d->num_buckets - 1].counter;
+  distribution_t *distribution = distribution_clone(d);
+  uint64_t quantity = (percent / 100.0) * distribution->buckets[distribution->num_buckets - 1].counter;
 
-  return find_percentile(d->buckets, d->num_buckets, quantity);
+  percent = find_percentile(distribution->buckets, distribution->num_buckets, quantity);
+
+  free(distribution);
+  return percent;
 }
 
 double distribution_average(distribution_t *d) {
-  return d->sum_gauges / (double) d->buckets[d->num_buckets - 1].counter;
+  distribution_t *distribution = distribution_clone(d);
+
+  double average = distribution->sum_gauges / (double) distribution->buckets[distribution->num_buckets - 1].counter;
+
+  free(distribution);
+  return average;
 }
 
 distribution_t* distribution_clone(distribution_t *d) {
   pthread_mutex_lock(&d->mutex);
 
   distribution_t *distribution = calloc(1, sizeof(distribution_t));
-  
+
   if (distribution != NULL) {
     distribution->sum_gauges = d->sum_gauges;
     distribution->num_buckets = d->num_buckets;
@@ -156,13 +168,14 @@ distribution_t* distribution_clone(distribution_t *d) {
 
     memcpy(distribution->buckets, d->buckets, d->num_buckets * sizeof(bucket_t));
   }
-  
+
   pthread_mutex_unlock(&d->mutex);
-  
+
   return distribution;
 }
 
 void distribution_destroy(distribution_t *d) {
+  /* should we check if we try to free the null pointer? */
   free(d->buckets);
   free(d);
 }
