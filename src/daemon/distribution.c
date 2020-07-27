@@ -143,11 +143,12 @@ static void bucket_update(bucket_t *buckets, size_t num_buckets, double gauge) {
 }
 
 void distribution_update(distribution_t *d, double gauge) {
-  pthread_mutex_lock(&d->mutex);
-
   if (d == NULL) {
+    errno = EINVAL;
     return;
   }
+
+  pthread_mutex_lock(&d->mutex);
 
   bucket_update(d->buckets, d->num_buckets, gauge);
 
@@ -246,7 +247,7 @@ distribution_t *distribution_clone(distribution_t *d) {
   memcpy(distribution->buckets, d->buckets, d->num_buckets * sizeof(bucket_t));
 
   pthread_mutex_init(&distribution->mutex, NULL);
-  
+
   pthread_mutex_unlock(&d->mutex);
 
   return distribution;
