@@ -21,7 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  *
  * Authors:
- *   Barbara bkjg Kaczorowska <bkjg252 at gmail.com>
+ *   Barbara bkjg Kaczorowska <bkjg at google.com>
  */
 
 #ifndef DISTRIBUTION_H

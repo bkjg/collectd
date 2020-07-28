@@ -21,7 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  *
  * Authors:
- *   Barbara bkjg Kaczorowska <bkjg252 at gmail.com>
+ *   Barbara bkjg Kaczorowska <bkjg at google.com>
  */
 
 #include "distribution.h"
@@ -83,7 +83,7 @@ static bucket_t *bucket_new_custom(size_t num_buckets,
   if (buckets == NULL) {
     return NULL;
   }
-
+  //sprawdzic czy wieksze od zera i czy sa w kolejnosci rosnacej
   for (size_t i = 0; i < num_buckets - 1; ++i) {
     buckets[i].max_boundary = custom_buckets_boundaries[i];
   }
