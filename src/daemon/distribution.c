@@ -76,19 +76,34 @@ static bucket_t *bucket_new_exponential(size_t num_buckets, double initial_size,
   return buckets;
 }
 
-static bucket_t *bucket_new_custom(size_t num_buckets,
+static bucket_t *bucket_new_custom(size_t num_boundaries,
                                    const double *custom_buckets_boundaries) {
-  bucket_t *buckets = (bucket_t *)calloc(num_buckets, sizeof(bucket_t));
+  bucket_t *buckets = (bucket_t *)calloc(num_boundaries + 1, sizeof(bucket_t));
 
   if (buckets == NULL) {
     return NULL;
   }
-  //sprawdzic czy wieksze od zera i czy sa w kolejnosci rosnacej
-  for (size_t i = 0; i < num_buckets - 1; ++i) {
+
+  if (custom_buckets_boundaries[0] <= 0) {
+    free(buckets);
+    errno = EINVAL;
+    return NULL;
+  }
+
+  buckets[0].max_boundary = custom_buckets_boundaries[0];
+
+  for (size_t i = 1; i < num_boundaries; ++i) {
+    if (custom_buckets_boundaries[i] <= 0 ||
+        custom_buckets_boundaries[i - 1] >= custom_buckets_boundaries[i]) {
+      free(buckets);
+      errno = EINVAL;
+      return NULL;
+    }
+
     buckets[i].max_boundary = custom_buckets_boundaries[i];
   }
 
-  buckets[num_buckets - 1].max_boundary = INFINITY;
+  buckets[num_boundaries].max_boundary = INFINITY;
 
   return buckets;
 }

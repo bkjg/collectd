@@ -48,8 +48,12 @@ distribution_t *distribution_new_exponential(size_t num_buckets,
                                              double factor);
 /* function that create new distribution structure and initialize buckets using
  * custom buckets sizes given by the user
- * it will return null if any error occurred, for example - num_buckets is zero
+ * It will return null if any error occurred, for example - num_buckets is zero
  * or OS couldn't allocate the memory - then errno will contain the error code
+ * There is also one case when the function can return with some error - if the
+ * custom buckets boundaries aren't in the ascending order or some boundaries
+ * are less than zero, then the function will return null and will set errno to
+ * EINVAL
  */
 distribution_t *distribution_new_custom(size_t num_buckets,
                                         double *custom_buckets_boundaries);
