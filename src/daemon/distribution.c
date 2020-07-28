@@ -51,18 +51,15 @@ static bucket_t *bucket_new_exponential(size_t num_buckets, double initial_size,
 }
 
 static bucket_t *bucket_new_custom(size_t num_buckets,
-                                   const double *custom_buckets_sizes) {
+                                   const double *custom_buckets_boundaries) {
   bucket_t *buckets = (bucket_t *)calloc(num_buckets, sizeof(bucket_t));
 
   if (buckets == NULL) {
     return NULL;
   }
 
-  double ptr = 0.0;
-
   for (size_t i = 0; i < num_buckets - 1; ++i) {
-    ptr += custom_buckets_sizes[i];
-    buckets[i].max_boundary = ptr;
+    buckets[i].max_boundary = custom_buckets_boundaries[i];
   }
 
   buckets[num_buckets - 1].max_boundary = INFINITY;
@@ -113,14 +110,14 @@ distribution_t *distribution_new_exponential(size_t num_buckets,
 }
 
 distribution_t *distribution_new_custom(size_t num_buckets,
-                                        double *custom_buckets_sizes) {
+                                        double *custom_buckets_boundaries) {
   distribution_t *d = (distribution_t *)calloc(1, sizeof(distribution_t));
 
   if (d == NULL) {
     return NULL;
   }
 
-  d->buckets = bucket_new_custom(num_buckets, custom_buckets_sizes);
+  d->buckets = bucket_new_custom(num_buckets, custom_buckets_boundaries);
 
   if (d->buckets == NULL) {
     free(d);
