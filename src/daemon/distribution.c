@@ -150,7 +150,7 @@ distribution_t *distribution_new_exponential(size_t num_buckets,
   return d;
 }
 
-distribution_t *distribution_new_custom(size_t num_buckets,
+distribution_t *distribution_new_custom(size_t num_boundaries,
                                         double *custom_buckets_boundaries) {
   distribution_t *d = (distribution_t *)calloc(1, sizeof(distribution_t));
 
@@ -158,14 +158,14 @@ distribution_t *distribution_new_custom(size_t num_buckets,
     return NULL;
   }
 
-  d->buckets = bucket_new_custom(num_buckets, custom_buckets_boundaries);
+  d->buckets = bucket_new_custom(num_boundaries, custom_buckets_boundaries);
 
   if (d->buckets == NULL) {
     free(d);
     return NULL;
   }
 
-  d->num_buckets = num_buckets;
+  d->num_buckets = num_boundaries;
   pthread_mutex_init(&d->mutex, NULL);
 
   return d;
