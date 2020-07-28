@@ -426,6 +426,8 @@ libmetadata_la_SOURCES = \
 	src/utils/metadata/meta_data.h
 
 libmetric_la_SOURCES = \
+		       src/daemon/distribution.c \
+		       src/daemon/distribution.h \
 		       src/daemon/metric.c \
 		       src/daemon/metric.h
 libmetric_la_LIBADD = libmetadata.la $(COMMON_LIBS)
