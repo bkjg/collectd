@@ -48,6 +48,9 @@ double distribution_average(distribution_t *d);
 /* function that do the clone of distribution structure
  * if the user will pass the wrong argument to this function, i.e. d will be
  * null, then the function will return null and the errno will be set to EINVAL
+ * there is also the possibility that the user will pass the proper argument but
+ * the function will fail anyway, i.e. calloc will return null, then the
+ * function will return null and the errno will be set by calloc system call
  */
 distribution_t *distribution_clone(distribution_t *d);
 

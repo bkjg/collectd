@@ -173,9 +173,9 @@ static double find_percentile(bucket_t *buckets, size_t num_buckets,
 }
 
 double distribution_percentile(distribution_t *d, double percent) {
-  if (d == NULL) {
+  if (d == NULL || percent > 100.0) {
     errno = EINVAL;
-    return -1;
+    return NAN;
   }
 
   pthread_mutex_lock(&d->mutex);
@@ -192,7 +192,7 @@ double distribution_percentile(distribution_t *d, double percent) {
 double distribution_average(distribution_t *d) {
   if (d == NULL) {
     errno = EINVAL;
-    return -1;
+    return NAN;
   }
 
   pthread_mutex_lock(&d->mutex);
