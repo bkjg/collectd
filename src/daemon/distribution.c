@@ -181,20 +181,14 @@ double distribution_percentile(distribution_t *d, double percent) {
     return -1;
   }
 
-  distribution_t *distribution = distribution_clone(d);
-
-  if (distribution == NULL) {
-    return -1;
-  }
+  pthread_mutex_lock(&d->mutex);
 
   uint64_t quantity =
-      (percent / 100.0) *
-      distribution->buckets[distribution->num_buckets - 1].counter;
+      (percent / 100.0) * d->buckets[d->num_buckets - 1].counter;
 
-  percent = find_percentile(distribution->buckets, distribution->num_buckets,
-                            quantity);
+  percent = find_percentile(d->buckets, d->num_buckets, quantity);
 
-  distribution_destroy(distribution);
+  pthread_mutex_unlock(&d->mutex);
   return percent;
 }
 
@@ -204,17 +198,13 @@ double distribution_average(distribution_t *d) {
     return -1;
   }
 
-  distribution_t *distribution = distribution_clone(d);
-
-  if (distribution == NULL) {
-    return -1;
-  }
+  pthread_mutex_lock(&d->mutex);
 
   double average =
-      distribution->sum_gauges /
-      (double)distribution->buckets[distribution->num_buckets - 1].counter;
+      d->sum_gauges / (double)d->buckets[d->num_buckets - 1].counter;
 
-  distribution_destroy(distribution);
+  pthread_mutex_unlock(&d->mutex);
+
   return average;
 }
 
@@ -224,14 +214,13 @@ distribution_t *distribution_clone(distribution_t *d) {
     return NULL;
   }
 
-  pthread_mutex_lock(&d->mutex);
-
   distribution_t *distribution = calloc(1, sizeof(distribution_t));
 
   if (distribution == NULL) {
-    pthread_mutex_unlock(&d->mutex);
     return NULL;
   }
+
+  pthread_mutex_lock(&d->mutex);
 
   distribution->sum_gauges = d->sum_gauges;
   distribution->num_buckets = d->num_buckets;
@@ -255,7 +244,6 @@ distribution_t *distribution_clone(distribution_t *d) {
 
 void distribution_destroy(distribution_t *d) {
   if (d == NULL) {
-    errno = EINVAL;
     return;
   }
 
