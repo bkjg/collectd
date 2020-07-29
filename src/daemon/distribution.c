@@ -41,14 +41,14 @@ struct distribution_s {
 };
 
 static bucket_t *bucket_new_linear(size_t num_buckets, double size) {
-  bucket_t *buckets = (bucket_t *)calloc(num_buckets, sizeof(bucket_t));
+  bucket_t *buckets = (bucket_t *) calloc(num_buckets, sizeof(bucket_t));
 
   if (buckets == NULL) {
     return NULL;
   }
 
   for (size_t i = 0; i < num_buckets - 1; ++i) {
-    buckets[i].max_boundary = (double)(i + 1) * size;
+    buckets[i].max_boundary = (double) (i + 1) * size;
   }
 
   buckets[num_buckets - 1].max_boundary = INFINITY;
@@ -58,7 +58,7 @@ static bucket_t *bucket_new_linear(size_t num_buckets, double size) {
 
 static bucket_t *bucket_new_exponential(size_t num_buckets, double initial_size,
                                         double factor) {
-  bucket_t *buckets = (bucket_t *)calloc(num_buckets, sizeof(bucket_t));
+  bucket_t *buckets = (bucket_t *) calloc(num_buckets, sizeof(bucket_t));
 
   if (buckets == NULL) {
     return NULL;
@@ -78,29 +78,31 @@ static bucket_t *bucket_new_exponential(size_t num_buckets, double initial_size,
 
 static bucket_t *bucket_new_custom(size_t num_boundaries,
                                    const double *custom_buckets_boundaries) {
-  bucket_t *buckets = (bucket_t *)calloc(num_boundaries + 1, sizeof(bucket_t));
+  bucket_t *buckets = (bucket_t *) calloc(num_boundaries + 1, sizeof(bucket_t));
 
   if (buckets == NULL) {
     return NULL;
   }
 
-  if (custom_buckets_boundaries[0] <= 0) {
-    free(buckets);
-    errno = EINVAL;
-    return NULL;
-  }
-
-  buckets[0].max_boundary = custom_buckets_boundaries[0];
-
-  for (size_t i = 1; i < num_boundaries; ++i) {
-    if (custom_buckets_boundaries[i] <= 0 ||
-        custom_buckets_boundaries[i - 1] >= custom_buckets_boundaries[i]) {
+  if (num_boundaries > 0) {
+    if (custom_buckets_boundaries[0] <= 0) {
       free(buckets);
       errno = EINVAL;
       return NULL;
     }
 
-    buckets[i].max_boundary = custom_buckets_boundaries[i];
+    buckets[0].max_boundary = custom_buckets_boundaries[0];
+
+    for (size_t i = 1; i < num_boundaries; ++i) {
+      if (custom_buckets_boundaries[i] <= 0 ||
+          custom_buckets_boundaries[i - 1] >= custom_buckets_boundaries[i]) {
+        free(buckets);
+        errno = EINVAL;
+        return NULL;
+      }
+
+      buckets[i].max_boundary = custom_buckets_boundaries[i];
+    }
   }
 
   buckets[num_boundaries].max_boundary = INFINITY;
@@ -114,7 +116,7 @@ distribution_t *distribution_new_linear(size_t num_buckets, double size) {
     return NULL;
   }
 
-  distribution_t *d = (distribution_t *)calloc(1, sizeof(distribution_t));
+  distribution_t *d = (distribution_t *) calloc(1, sizeof(distribution_t));
 
   if (d == NULL) {
     return NULL;
@@ -141,7 +143,7 @@ distribution_t *distribution_new_exponential(size_t num_buckets,
     return NULL;
   }
 
-  distribution_t *d = (distribution_t *)calloc(1, sizeof(distribution_t));
+  distribution_t *d = (distribution_t *) calloc(1, sizeof(distribution_t));
 
   if (d == NULL) {
     return NULL;
@@ -164,8 +166,9 @@ distribution_t *distribution_new_exponential(size_t num_buckets,
 
 distribution_t *distribution_new_custom(size_t num_boundaries,
                                         double *custom_buckets_boundaries) {
-  distribution_t *d = (distribution_t *)calloc(1, sizeof(distribution_t));
+  distribution_t *d = (distribution_t *) calloc(1, sizeof(distribution_t));
 
+  /* maybe check if custom_buckets_boundaries contains exactly num_boundaries values */
   if (d == NULL) {
     return NULL;
   }
@@ -177,14 +180,14 @@ distribution_t *distribution_new_custom(size_t num_boundaries,
     return NULL;
   }
 
-  d->num_buckets = num_boundaries;
+  d->num_buckets = num_boundaries + 1;
   pthread_mutex_init(&d->mutex, NULL);
 
   return d;
 }
 
 static void bucket_update(bucket_t *buckets, size_t num_buckets, double gauge) {
-  int ptr = (int)num_buckets - 1;
+  int ptr = (int) num_buckets - 1;
 
   while (buckets[ptr].max_boundary > gauge && ptr >= 0) {
     buckets[ptr].counter++;
@@ -251,7 +254,7 @@ double distribution_average(distribution_t *d) {
   pthread_mutex_lock(&d->mutex);
 
   double average =
-      d->sum_gauges / (double)d->buckets[d->num_buckets - 1].counter;
+      d->sum_gauges / (double) d->buckets[d->num_buckets - 1].counter;
 
   pthread_mutex_unlock(&d->mutex);
 
