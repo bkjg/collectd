@@ -125,23 +125,28 @@ DEF_TEST(distribution_new_custom) {
           .num_boundaries = 0,
           .want_get = (double[]){INFINITY},
       },
-      /*{
-        .num_boundaries = 10,
+      {
+        .num_boundaries = 5,
+        .given_boundaries = (double[]){5, 4, 6, 7, 8},
         .want_get = NULL,
       },
       {
-        .num_boundaries = 8,
+        .num_boundaries = 4,
+        .given_boundaries = (double[]){-2, 4, 5, 6},
         .want_get = NULL
       },
       {
-        .num_boundaries = 12,
+        /* maybe it shouldn't pass it??? */
+        .num_boundaries = 6,
+        .given_boundaries = (double[]){4, 7, 7.23, 8, 10.98},
         .want_get = NULL
       },
       {
-        .num_boundaries = 33,
-        .want_get = NULL
+        .num_boundaries = 7,
+        .given_boundaries = (double[]){1.23, 4.76, 6.324, 8.324, 9.342, 16.4234, 90.4234},
+        .want_get = (double[]){1.23, 4.76, 6.324, 8.324, 9.342, 16.4234, 90.4234, INFINITY}
       },
-      {
+      /*{
         .num_boundaries = 6,
         .want_get = (double[]){6, 12, 24, 48, 96, INFINITY},
       }*/
