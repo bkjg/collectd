@@ -109,6 +109,11 @@ static bucket_t *bucket_new_custom(size_t num_boundaries,
 }
 
 distribution_t *distribution_new_linear(size_t num_buckets, double size) {
+  if (num_buckets == 0 || size <= 0) {
+    errno = EINVAL;
+    return NULL;
+  }
+
   distribution_t *d = (distribution_t *)calloc(1, sizeof(distribution_t));
 
   if (d == NULL) {
@@ -131,12 +136,19 @@ distribution_t *distribution_new_linear(size_t num_buckets, double size) {
 distribution_t *distribution_new_exponential(size_t num_buckets,
                                              double initial_size,
                                              double factor) {
+  if (num_buckets == 0 || initial_size <= 0 || factor <= 0) {
+    errno = EINVAL;
+    return NULL;
+  }
+
   distribution_t *d = (distribution_t *)calloc(1, sizeof(distribution_t));
 
   if (d == NULL) {
     return NULL;
   }
 
+  /* as in distribution_new_linear: it would be nice to check if initial_size and factor
+   * are greater than zero, for consideration: one of them also greater than one */
   d->buckets = bucket_new_exponential(num_buckets, initial_size, factor);
 
   if (d->buckets == NULL) {
