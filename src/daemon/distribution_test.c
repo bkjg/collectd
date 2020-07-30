@@ -5,6 +5,7 @@
 #include "testing.h"
 
 /* TODO(bkjg): add checking the size of returned array if is it equal to the proper size */
+/* TODO(bkjg): add checking errno */
 
 DEF_TEST(distribution_new_linear) {
   struct {
@@ -17,19 +18,19 @@ DEF_TEST(distribution_new_linear) {
           .want_get = NULL,
       },
       {
-        .num_buckets = 10,
-        .size = -5,
-        .want_get = NULL,
+          .num_buckets = 10,
+          .size = -5,
+          .want_get = NULL,
       },
       {
-        .num_buckets = 8,
-        .size = 0,
-        .want_get = NULL
+          .num_buckets = 8,
+          .size = 0,
+          .want_get = NULL
       },
       {
-        .num_buckets = 10,
-        .size = 2,
-        .want_get = (double[]){2, 4, 6, 8, 10, 12, 14, 16, 18, INFINITY},
+          .num_buckets = 10,
+          .size = 2,
+          .want_get = (double[]) {2, 4, 6, 8, 10, 12, 14, 16, 18, INFINITY},
       }
   };
 
@@ -67,32 +68,32 @@ DEF_TEST(distribution_new_exponential) {
           .want_get = NULL,
       },
       {
-        .num_buckets = 10,
-        .initial_size = -52,
-        .want_get = NULL,
+          .num_buckets = 10,
+          .initial_size = -52,
+          .want_get = NULL,
       },
       {
-        .num_buckets = 8,
-        .initial_size = 0,
-        .want_get = NULL
+          .num_buckets = 8,
+          .initial_size = 0,
+          .want_get = NULL
       },
       {
-        .num_buckets = 12,
-        .initial_size = 2,
-        .factor = 0,
-        .want_get = NULL
+          .num_buckets = 12,
+          .initial_size = 2,
+          .factor = 0,
+          .want_get = NULL
       },
       {
-        .num_buckets = 33,
-        .initial_size = 7,
-        .factor = -5,
-        .want_get = NULL
+          .num_buckets = 33,
+          .initial_size = 7,
+          .factor = -5,
+          .want_get = NULL
       },
       {
-        .num_buckets = 6,
-        .initial_size = 2,
-        .factor = 3,
-        .want_get = (double[]){6, 12, 24, 48, 96, INFINITY},
+          .num_buckets = 6,
+          .initial_size = 2,
+          .factor = 3,
+          .want_get = (double[]) {6, 12, 24, 48, 96, INFINITY},
       }
   };
 
@@ -125,28 +126,22 @@ DEF_TEST(distribution_new_custom) {
   } cases[] = {
       {
           .num_boundaries = 0,
-          .want_get = (double[]){INFINITY},
+          .want_get = (double[]) {INFINITY},
       },
       {
-        .num_boundaries = 5,
-        .given_boundaries = (double[]){5, 4, 6, 7, 8},
-        .want_get = NULL,
+          .num_boundaries = 5,
+          .given_boundaries = (double[]) {5, 4, 6, 7, 8},
+          .want_get = NULL,
       },
       {
-        .num_boundaries = 4,
-        .given_boundaries = (double[]){-2, 4, 5, 6},
-        .want_get = NULL
+          .num_boundaries = 4,
+          .given_boundaries = (double[]) {-2, 4, 5, 6},
+          .want_get = NULL
       },
       {
-        /* maybe it shouldn't pass??? */
-        .num_boundaries = 6,
-        .given_boundaries = (double[]){4, 7, 7.23, 8, 10.98},
-        .want_get = NULL
-      },
-      {
-        .num_boundaries = 7,
-        .given_boundaries = (double[]){1.23, 4.76, 6.324, 8.324, 9.342, 16.4234, 90.4234},
-        .want_get = (double[]){1.23, 4.76, 6.324, 8.324, 9.342, 16.4234, 90.4234, INFINITY}
+          .num_boundaries = 7,
+          .given_boundaries = (double[]) {1.23, 4.76, 6.324, 8.324, 9.342, 16.4234, 90.4234},
+          .want_get = (double[]) {1.23, 4.76, 6.324, 8.324, 9.342, 16.4234, 90.4234, INFINITY}
       },
   };
 
@@ -168,6 +163,7 @@ DEF_TEST(distribution_new_custom) {
 
     distribution_destroy(d);
   }
+
   return 0;
 }
 
