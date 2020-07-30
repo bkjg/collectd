@@ -222,11 +222,11 @@ distribution_t *distribution_new_custom(size_t num_boundaries,
 }
 
 static void bucket_update(bucket_t *buckets, size_t num_buckets, double gauge) {
-  int ptr = (int)num_buckets - 1;
+  int idx = (int)num_buckets - 1;
 
-  while (buckets[ptr].max_boundary > gauge && ptr >= 0) {
-    buckets[ptr].counter++;
-    ptr--;
+  while (buckets[idx].max_boundary > gauge && idx >= 0) {
+    buckets[idx].counter++;
+    idx--;
   }
 }
 
