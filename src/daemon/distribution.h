@@ -80,7 +80,7 @@ double distribution_average(distribution_t *d);
  * null, then the function will return null and the errno will be set to EINVAL
  * there is also the possibility that the user will pass the proper argument but
  * the function will fail anyway, i.e. calloc will return null, then the
- * function will return null and the errno will be set by calloc system call
+ * function will return null and the errno will be set by calloc
  */
 distribution_t *distribution_clone(distribution_t *d);
 
@@ -91,7 +91,8 @@ distribution_t *distribution_clone(distribution_t *d);
  * null pointer */
 void distribution_destroy(distribution_t *d);
 
-/* TODO(bkjg): add description of this function and improve previous descriptions */
+/* TODO(bkjg): add description of this function and improve previous
+ * descriptions */
 bool distribution_check_equal(distribution_t *d1, distribution_t *d2);
 
 #endif // DISTRIBUTION_H

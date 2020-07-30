@@ -264,7 +264,7 @@ static double find_percentile(bucket_t *buckets, size_t num_buckets,
 }
 
 double distribution_percentile(distribution_t *d, double percent) {
-  if (d == NULL || percent > 100.0) {
+  if (d == NULL || percent > 100.0 || percent < 0) {
     errno = EINVAL;
     return NAN;
   }
