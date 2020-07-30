@@ -272,7 +272,7 @@ double distribution_percentile(distribution_t *d, double percent) {
   pthread_mutex_lock(&d->mutex);
 
   uint64_t quantity =
-      (percent / 100.0) * d->buckets[d->num_buckets - 1].counter;
+      (uint64_t)(percent / 100.0) * d->buckets[d->num_buckets - 1].counter;
 
   percent = find_percentile(d->buckets, d->num_buckets, quantity);
 
