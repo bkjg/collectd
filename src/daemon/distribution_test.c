@@ -41,6 +41,7 @@ DEF_TEST(distribution_new_linear) {
     if (cases[i].want_get == NULL) {
       EXPECT_EQ_PTR(cases[i].want_get, d);
     } else {
+      CHECK_NOT_NULL(d);
       EXPECT_EQ_UINT64(cases[i].num_buckets, d->num_buckets);
 
       for (size_t j = 0; j < cases[i].num_buckets; ++j) {
@@ -103,6 +104,7 @@ DEF_TEST(distribution_new_exponential) {
     if (cases[i].want_get == NULL) {
       EXPECT_EQ_PTR(cases[i].want_get, d);
     } else {
+      CHECK_NOT_NULL(d);
       EXPECT_EQ_UINT64(cases[i].num_buckets, d->num_buckets);
 
       for (size_t j = 0; j < cases[i].num_buckets; ++j) {
@@ -136,7 +138,7 @@ DEF_TEST(distribution_new_custom) {
         .want_get = NULL
       },
       {
-        /* maybe it shouldn't pass it??? */
+        /* maybe it shouldn't pass??? */
         .num_boundaries = 6,
         .given_boundaries = (double[]){4, 7, 7.23, 8, 10.98},
         .want_get = NULL
@@ -146,10 +148,6 @@ DEF_TEST(distribution_new_custom) {
         .given_boundaries = (double[]){1.23, 4.76, 6.324, 8.324, 9.342, 16.4234, 90.4234},
         .want_get = (double[]){1.23, 4.76, 6.324, 8.324, 9.342, 16.4234, 90.4234, INFINITY}
       },
-      /*{
-        .num_boundaries = 6,
-        .want_get = (double[]){6, 12, 24, 48, 96, INFINITY},
-      }*/
   };
 
   for (size_t i = 0; i < (sizeof(cases) / sizeof(cases[0])); ++i) {
@@ -160,6 +158,7 @@ DEF_TEST(distribution_new_custom) {
     if (cases[i].want_get == NULL) {
       EXPECT_EQ_PTR(cases[i].want_get, d);
     } else {
+      CHECK_NOT_NULL(d);
       EXPECT_EQ_UINT64(cases[i].num_boundaries + 1, d->num_buckets);
 
       for (size_t j = 0; j < cases[i].num_boundaries + 1; ++j) {
@@ -172,10 +171,16 @@ DEF_TEST(distribution_new_custom) {
   return 0;
 }
 
+DEF_TEST(distribution_clone) {
+
+  return 0;
+}
+
 int main(void) {
   RUN_TEST(distribution_new_linear);
   RUN_TEST(distribution_new_exponential);
   RUN_TEST(distribution_new_custom);
+  RUN_TEST(distribution_clone);
 
   END_TEST;
 }
