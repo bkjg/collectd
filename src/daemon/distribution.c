@@ -40,7 +40,6 @@ struct distribution_s {
   pthread_mutex_t mutex;
 };
 
-
 bool distribution_check_equal(distribution_t *d1, distribution_t *d2) {
   if ((d1 == NULL && d2 != NULL) || (d1 != NULL && d2 == NULL)) {
     return false;
@@ -265,7 +264,7 @@ static double find_percentile(bucket_t *buckets, size_t num_buckets,
 }
 
 double distribution_percentile(distribution_t *d, double percent) {
-  if (d == NULL || percent > 100.0) {
+  if (d == NULL || percent > 100.0 || percent < 0) {
     errno = EINVAL;
     return NAN;
   }
