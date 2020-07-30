@@ -91,4 +91,7 @@ distribution_t *distribution_clone(distribution_t *d);
  * null pointer */
 void distribution_destroy(distribution_t *d);
 
+/* TODO(bkjg): add description of this function and improve previous descriptions */
+bool distribution_check_equal(distribution_t *d1, distribution_t *d2);
+
 #endif // DISTRIBUTION_H

@@ -40,7 +40,8 @@ struct distribution_s {
   pthread_mutex_t mutex;
 };
 
-static bool distribution_check_equal(distribution_t *d1, distribution_t *d2) {
+
+bool distribution_check_equal(distribution_t *d1, distribution_t *d2) {
   if ((d1 == NULL && d2 != NULL) || (d1 != NULL && d2 == NULL)) {
     return false;
   }
@@ -69,11 +70,14 @@ static bool distribution_check_equal(distribution_t *d1, distribution_t *d2) {
     }
   }
 
+  pthread_mutex_unlock(&d2->mutex);
+  pthread_mutex_unlock(&d1->mutex);
+
   return true;
 }
 
 static bucket_t *bucket_new_linear(size_t num_buckets, double size) {
-  bucket_t *buckets = (bucket_t *)calloc(num_buckets, sizeof(bucket_t));
+  bucket_t *buckets = calloc(num_buckets, sizeof(bucket_t));
 
   if (buckets == NULL) {
     return NULL;
@@ -90,7 +94,7 @@ static bucket_t *bucket_new_linear(size_t num_buckets, double size) {
 
 static bucket_t *bucket_new_exponential(size_t num_buckets, double initial_size,
                                         double factor) {
-  bucket_t *buckets = (bucket_t *)calloc(num_buckets, sizeof(bucket_t));
+  bucket_t *buckets = calloc(num_buckets, sizeof(bucket_t));
 
   if (buckets == NULL) {
     return NULL;
@@ -110,7 +114,7 @@ static bucket_t *bucket_new_exponential(size_t num_buckets, double initial_size,
 
 static bucket_t *bucket_new_custom(size_t num_boundaries,
                                    const double *custom_buckets_boundaries) {
-  bucket_t *buckets = (bucket_t *)calloc(num_boundaries + 1, sizeof(bucket_t));
+  bucket_t *buckets = calloc(num_boundaries + 1, sizeof(bucket_t));
 
   if (buckets == NULL) {
     return NULL;
@@ -148,7 +152,7 @@ distribution_t *distribution_new_linear(size_t num_buckets, double size) {
     return NULL;
   }
 
-  distribution_t *d = (distribution_t *)calloc(1, sizeof(distribution_t));
+  distribution_t *d = calloc(1, sizeof(distribution_t));
 
   if (d == NULL) {
     return NULL;
@@ -175,7 +179,7 @@ distribution_t *distribution_new_exponential(size_t num_buckets,
     return NULL;
   }
 
-  distribution_t *d = (distribution_t *)calloc(1, sizeof(distribution_t));
+  distribution_t *d = calloc(1, sizeof(distribution_t));
 
   if (d == NULL) {
     return NULL;
@@ -199,7 +203,7 @@ distribution_t *distribution_new_exponential(size_t num_buckets,
 
 distribution_t *distribution_new_custom(size_t num_boundaries,
                                         double *custom_buckets_boundaries) {
-  distribution_t *d = (distribution_t *)calloc(1, sizeof(distribution_t));
+  distribution_t *d = calloc(1, sizeof(distribution_t));
 
   if (d == NULL) {
     return NULL;
@@ -219,11 +223,11 @@ distribution_t *distribution_new_custom(size_t num_boundaries,
 }
 
 static void bucket_update(bucket_t *buckets, size_t num_buckets, double gauge) {
-  int ptr = (int)num_buckets - 1;
+  int idx = (int)num_buckets - 1;
 
-  while (buckets[ptr].max_boundary > gauge && ptr >= 0) {
-    buckets[ptr].counter++;
-    ptr--;
+  while (buckets[idx].max_boundary > gauge && idx >= 0) {
+    buckets[idx].counter++;
+    idx--;
   }
 }
 
@@ -269,7 +273,7 @@ double distribution_percentile(distribution_t *d, double percent) {
   pthread_mutex_lock(&d->mutex);
 
   uint64_t quantity =
-      (percent / 100.0) * d->buckets[d->num_buckets - 1].counter;
+      (uint64_t)(percent / 100.0) * d->buckets[d->num_buckets - 1].counter;
 
   percent = find_percentile(d->buckets, d->num_buckets, quantity);
 
