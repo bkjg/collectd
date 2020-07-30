@@ -322,25 +322,36 @@ DEF_TEST(distribution_percentile) {
           .want_get = NAN,
       },
       {
-        .input_dist = &case2_distribution,
-        .percent = -5,
-        .want_get = NAN,
-      },
-      /*{
           .input_dist = &case2_distribution,
-          .want_get = 48.63575728,
-      },*/
+          .percent = -5,
+          .want_get = NAN,
+      },
+      {
+          .input_dist = &case2_distribution,
+          .percent = 110.9,
+          .want_get = NAN,
+      },
+      {
+          .input_dist = &case2_distribution,
+          .percent = -0.12,
+          .want_get = NAN,
+      },
+      {
+          /* bin search - looped itself */
+          .input_dist = &case2_distribution,
+          .percent = 5.67,
+          .want_get = 15,
+      },
   };
 
   for (size_t i = 0; i < (sizeof(cases) / sizeof(cases[0])); ++i) {
     printf("## Case %zu:\n", i);
 
-    EXPECT_EQ_DOUBLE(cases[i].want_get,
-                     distribution_percentile(cases[i].input_dist, cases[i].percent));
+    EXPECT_EQ_DOUBLE(
+        cases[i].want_get,
+        distribution_percentile(cases[i].input_dist, cases[i].percent));
   }
 
-  /* firstly - bin search - looped itself, secondly, why it didn't fail when received -5
-   * oooh I know */
   return 0;
 }
 
