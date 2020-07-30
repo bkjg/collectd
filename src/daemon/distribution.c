@@ -254,9 +254,9 @@ static double find_percentile(bucket_t *buckets, size_t num_buckets,
     middle = (left + right) / 2;
 
     if (buckets[middle].counter >= quantity) {
-      left = middle;
+      right = middle;
     } else {
-      right = middle - 1;
+      left = middle + 1;
     }
   }
 
