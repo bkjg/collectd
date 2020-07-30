@@ -8,6 +8,8 @@
  * proper size */
 /* TODO(bkjg): add checking errno */
 /* TODO(bkjg): add checking sum_gauges and counters in buckets */
+/* TODO(bkjg): add checking if called function changed the content of
+ * distribution_t structure */
 
 DEF_TEST(distribution_new_linear) {
   struct {
