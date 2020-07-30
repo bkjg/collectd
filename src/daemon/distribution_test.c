@@ -28,7 +28,7 @@ DEF_TEST(distribution_new_linear) {
       {
           .num_buckets = 10,
           .size = 2,
-          .want_get = (double[]) {2, 4, 6, 8, 10, 12, 14, 16, 18, INFINITY},
+          .want_get = (double[]){2, 4, 6, 8, 10, 12, 14, 16, 18, INFINITY},
       }};
 
   for (size_t i = 0; i < (sizeof(cases) / sizeof(cases[0])); ++i) {
@@ -77,7 +77,7 @@ DEF_TEST(distribution_new_exponential) {
           .num_buckets = 6,
           .initial_size = 2,
           .factor = 3,
-          .want_get = (double[]) {6, 12, 24, 48, 96, INFINITY},
+          .want_get = (double[]){6, 12, 24, 48, 96, INFINITY},
       }};
 
   for (size_t i = 0; i < (sizeof(cases) / sizeof(cases[0])); ++i) {
@@ -110,21 +110,21 @@ DEF_TEST(distribution_new_custom) {
   } cases[] = {
       {
           .num_boundaries = 0,
-          .want_get = (double[]) {INFINITY},
+          .want_get = (double[]){INFINITY},
       },
       {
           .num_boundaries = 5,
-          .given_boundaries = (double[]) {5, 4, 6, 7, 8},
+          .given_boundaries = (double[]){5, 4, 6, 7, 8},
           .want_get = NULL,
       },
       {.num_boundaries = 4,
-          .given_boundaries = (double[]) {-2, 4, 5, 6},
-          .want_get = NULL},
+       .given_boundaries = (double[]){-2, 4, 5, 6},
+       .want_get = NULL},
       {.num_boundaries = 7,
-          .given_boundaries =
-          (double[]) {1.23, 4.76, 6.324, 8.324, 9.342, 16.4234, 90.4234},
-          .want_get = (double[]) {1.23, 4.76, 6.324, 8.324, 9.342, 16.4234, 90.4234,
-                                  INFINITY}},
+       .given_boundaries =
+           (double[]){1.23, 4.76, 6.324, 8.324, 9.342, 16.4234, 90.4234},
+       .want_get = (double[]){1.23, 4.76, 6.324, 8.324, 9.342, 16.4234, 90.4234,
+                              INFINITY}},
   };
 
   for (size_t i = 0; i < (sizeof(cases) / sizeof(cases[0])); ++i) {
@@ -156,7 +156,7 @@ DEF_TEST(distribution_clone) {
    * 40.231, 42.423, 44.432
    * 50.12, 53.32, 54.543, 57.423, 58.423, 59.2141
    * 80.342, 90.4235456, 100.3425, 150.34 */
-  bucket_t case0_buckets[] = {
+  bucket_t case1_buckets[] = {
       {
           .max_boundary = 15,
           .counter = 5,
@@ -178,8 +178,8 @@ DEF_TEST(distribution_clone) {
           .counter = 20,
       },
   };
-  distribution_t case0_distribution = {
-      .buckets = case0_buckets,
+  distribution_t case1_distribution = {
+      .buckets = case1_buckets,
       .num_buckets = 5,
       .sum_gauges = 972.7151456,
   };
@@ -193,8 +193,8 @@ DEF_TEST(distribution_clone) {
           .want_get = NULL,
       },
       {
-          .input_dist = &case0_distribution,
-          .want_get = &case0_distribution,
+          .input_dist = &case1_distribution,
+          .want_get = &case1_distribution,
       },
   };
 
@@ -216,11 +216,70 @@ DEF_TEST(distribution_clone) {
   return 0;
 }
 
+DEF_TEST(distribution_average) {
+  /* e.g. 4.576, 6.432, 8.432, 10.423, 11.54,
+   * 20.423, 29.312
+   * 40.231, 42.423, 44.432
+   * 50.12, 53.32, 54.543, 57.423, 58.423, 59.2141
+   * 80.342, 90.4235456, 100.3425, 150.34 */
+  bucket_t case1_buckets[] = {
+      {
+          .max_boundary = 15,
+          .counter = 5,
+      },
+      {
+          .max_boundary = 30,
+          .counter = 7,
+      },
+      {
+          .max_boundary = 45,
+          .counter = 10,
+      },
+      {
+          .max_boundary = 60,
+          .counter = 16,
+      },
+      {
+          .max_boundary = INFINITY,
+          .counter = 20,
+      },
+  };
+  distribution_t case1_distribution = {
+      .buckets = case1_buckets,
+      .num_buckets = 5,
+      .sum_gauges = 972.7151456,
+  };
+
+  struct {
+    distribution_t *input_dist;
+    double want_get;
+  } cases[] = {
+      {
+          .input_dist = NULL,
+          .want_get = NAN,
+      },
+      {
+          .input_dist = &case1_distribution,
+          .want_get = 48.63575728,
+      },
+  };
+
+  for (size_t i = 0; i < (sizeof(cases) / sizeof(cases[0])); ++i) {
+    printf("## Case %zu:\n", i);
+
+    EXPECT_EQ_DOUBLE(cases[i].want_get,
+                     distribution_average(cases[i].input_dist));
+  }
+
+  return 0;
+}
+
 int main(void) {
   RUN_TEST(distribution_new_linear);
   RUN_TEST(distribution_new_exponential);
   RUN_TEST(distribution_new_custom);
   RUN_TEST(distribution_clone);
+  RUN_TEST(distribution_average);
 
   END_TEST;
 }
