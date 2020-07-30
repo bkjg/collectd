@@ -217,6 +217,8 @@ DEF_TEST(distribution_clone) {
 }
 
 DEF_TEST(distribution_average) {
+  /* TODO(bkjg): add test when sum_gauges is equal zero and when there is only
+   * one gauge inside */
   /* e.g. 4.576, 6.432, 8.432, 10.423, 11.54,
    * 20.423, 29.312
    * 40.231, 42.423, 44.432
@@ -274,12 +276,81 @@ DEF_TEST(distribution_average) {
   return 0;
 }
 
+DEF_TEST(distribution_percentile) {
+  /* TODO(bkjg): add test when sum_gauges is equal zero and when there is only
+   * one gauge inside */
+  /* e.g. 4.576, 6.432, 8.432, 10.423, 11.54,
+   * 20.423, 29.312
+   * 40.231, 42.423, 44.432
+   * 50.12, 53.32, 54.543, 57.423, 58.423, 59.2141
+   * 80.342, 90.4235456, 100.3425, 150.34 */
+  bucket_t case2_buckets[] = {
+      {
+          .max_boundary = 15,
+          .counter = 5,
+      },
+      {
+          .max_boundary = 30,
+          .counter = 7,
+      },
+      {
+          .max_boundary = 45,
+          .counter = 10,
+      },
+      {
+          .max_boundary = 60,
+          .counter = 16,
+      },
+      {
+          .max_boundary = INFINITY,
+          .counter = 20,
+      },
+  };
+  distribution_t case2_distribution = {
+      .buckets = case2_buckets,
+      .num_buckets = 5,
+      .sum_gauges = 972.7151456,
+  };
+
+  struct {
+    distribution_t *input_dist;
+    double percent;
+    double want_get;
+  } cases[] = {
+      {
+          .input_dist = NULL,
+          .want_get = NAN,
+      },
+      {
+        .input_dist = &case2_distribution,
+        .percent = -5,
+        .want_get = NAN,
+      },
+      /*{
+          .input_dist = &case2_distribution,
+          .want_get = 48.63575728,
+      },*/
+  };
+
+  for (size_t i = 0; i < (sizeof(cases) / sizeof(cases[0])); ++i) {
+    printf("## Case %zu:\n", i);
+
+    EXPECT_EQ_DOUBLE(cases[i].want_get,
+                     distribution_percentile(cases[i].input_dist, cases[i].percent));
+  }
+
+  /* firstly - bin search - looped itself, secondly, why it didn't fail when received -5
+   * oooh I know */
+  return 0;
+}
+
 int main(void) {
   RUN_TEST(distribution_new_linear);
   RUN_TEST(distribution_new_exponential);
   RUN_TEST(distribution_new_custom);
   RUN_TEST(distribution_clone);
   RUN_TEST(distribution_average);
+  RUN_TEST(distribution_percentile);
 
   END_TEST;
 }
