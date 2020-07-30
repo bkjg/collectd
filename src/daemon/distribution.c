@@ -40,15 +40,47 @@ struct distribution_s {
   pthread_mutex_t mutex;
 };
 
+static bool distribution_check_equal(distribution_t *d1, distribution_t *d2) {
+  if ((d1 == NULL && d2 != NULL) || (d1 != NULL && d2 == NULL)) {
+    return false;
+  }
+
+  /* thanks to previous condition we know that if d1 is NULL then d2 is NULL too
+   */
+  if (d1 == NULL) {
+    return true;
+  }
+
+  pthread_mutex_lock(&d1->mutex);
+  pthread_mutex_lock(&d2->mutex);
+
+  if (d1->sum_gauges != d2->sum_gauges) {
+    return false;
+  }
+
+  if (d1->num_buckets != d2->num_buckets) {
+    return false;
+  }
+
+  for (size_t i = 0; i < d1->num_buckets; ++i) {
+    if (d1->buckets[i].max_boundary != d2->buckets[i].max_boundary ||
+        d1->buckets[i].counter != d2->buckets[i].counter) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 static bucket_t *bucket_new_linear(size_t num_buckets, double size) {
-  bucket_t *buckets = (bucket_t *) calloc(num_buckets, sizeof(bucket_t));
+  bucket_t *buckets = (bucket_t *)calloc(num_buckets, sizeof(bucket_t));
 
   if (buckets == NULL) {
     return NULL;
   }
 
   for (size_t i = 0; i < num_buckets - 1; ++i) {
-    buckets[i].max_boundary = (double) (i + 1) * size;
+    buckets[i].max_boundary = (double)(i + 1) * size;
   }
 
   buckets[num_buckets - 1].max_boundary = INFINITY;
@@ -58,7 +90,7 @@ static bucket_t *bucket_new_linear(size_t num_buckets, double size) {
 
 static bucket_t *bucket_new_exponential(size_t num_buckets, double initial_size,
                                         double factor) {
-  bucket_t *buckets = (bucket_t *) calloc(num_buckets, sizeof(bucket_t));
+  bucket_t *buckets = (bucket_t *)calloc(num_buckets, sizeof(bucket_t));
 
   if (buckets == NULL) {
     return NULL;
@@ -78,7 +110,7 @@ static bucket_t *bucket_new_exponential(size_t num_buckets, double initial_size,
 
 static bucket_t *bucket_new_custom(size_t num_boundaries,
                                    const double *custom_buckets_boundaries) {
-  bucket_t *buckets = (bucket_t *) calloc(num_boundaries + 1, sizeof(bucket_t));
+  bucket_t *buckets = (bucket_t *)calloc(num_boundaries + 1, sizeof(bucket_t));
 
   if (buckets == NULL) {
     return NULL;
@@ -116,7 +148,7 @@ distribution_t *distribution_new_linear(size_t num_buckets, double size) {
     return NULL;
   }
 
-  distribution_t *d = (distribution_t *) calloc(1, sizeof(distribution_t));
+  distribution_t *d = (distribution_t *)calloc(1, sizeof(distribution_t));
 
   if (d == NULL) {
     return NULL;
@@ -143,14 +175,15 @@ distribution_t *distribution_new_exponential(size_t num_buckets,
     return NULL;
   }
 
-  distribution_t *d = (distribution_t *) calloc(1, sizeof(distribution_t));
+  distribution_t *d = (distribution_t *)calloc(1, sizeof(distribution_t));
 
   if (d == NULL) {
     return NULL;
   }
 
-  /* as in distribution_new_linear: it would be nice to check if initial_size and factor
-   * are greater than zero, for consideration: one of them also greater than one */
+  /* as in distribution_new_linear: it would be nice to check if initial_size
+   * and factor are greater than zero, for consideration: one of them also
+   * greater than one */
   d->buckets = bucket_new_exponential(num_buckets, initial_size, factor);
 
   if (d->buckets == NULL) {
@@ -166,9 +199,8 @@ distribution_t *distribution_new_exponential(size_t num_buckets,
 
 distribution_t *distribution_new_custom(size_t num_boundaries,
                                         double *custom_buckets_boundaries) {
-  distribution_t *d = (distribution_t *) calloc(1, sizeof(distribution_t));
+  distribution_t *d = (distribution_t *)calloc(1, sizeof(distribution_t));
 
-  /* maybe check if custom_buckets_boundaries contains exactly num_boundaries values */
   if (d == NULL) {
     return NULL;
   }
@@ -187,7 +219,7 @@ distribution_t *distribution_new_custom(size_t num_boundaries,
 }
 
 static void bucket_update(bucket_t *buckets, size_t num_buckets, double gauge) {
-  int ptr = (int) num_buckets - 1;
+  int ptr = (int)num_buckets - 1;
 
   while (buckets[ptr].max_boundary > gauge && ptr >= 0) {
     buckets[ptr].counter++;
@@ -254,7 +286,7 @@ double distribution_average(distribution_t *d) {
   pthread_mutex_lock(&d->mutex);
 
   double average =
-      d->sum_gauges / (double) d->buckets[d->num_buckets - 1].counter;
+      d->sum_gauges / (double)d->buckets[d->num_buckets - 1].counter;
 
   pthread_mutex_unlock(&d->mutex);
 
