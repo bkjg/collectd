@@ -40,6 +40,44 @@ struct distribution_s {
   pthread_mutex_t mutex;
 };
 
+double *distribution_get_buckets_boundaries(distribution_t *d) {
+  double *boundaries = calloc(d->num_buckets, sizeof(double));
+
+  if (boundaries == NULL) {
+    return NULL;
+  }
+
+  for (size_t i = 0; i < d->num_buckets; ++i) {
+    boundaries[i] = d->buckets[i].max_boundary;
+  }
+
+  return boundaries;
+}
+
+uint64_t *distribution_get_buckets_counters(distribution_t *d) {
+  uint64_t *counters = calloc(d->num_buckets, sizeof(uint64_t));
+
+  if (counters == NULL) {
+    return NULL;
+  }
+
+  pthread_mutex_lock(&d->mutex);
+  for (size_t i = 0; i < d->num_buckets; ++i) {
+    counters[i] = d->buckets[i].counter;
+  }
+  pthread_mutex_unlock(&d->mutex);
+
+  return counters;
+}
+
+size_t distribution_get_num_buckets(distribution_t *d) {
+  return d->num_buckets;
+}
+
+double distribution_get_sum_gauges(distribution_t *d) {
+  return d->sum_gauges;
+}
+
 bool distribution_check_equal(distribution_t *d1, distribution_t *d2) {
   if ((d1 == NULL && d2 != NULL) || (d1 != NULL && d2 == NULL)) {
     return false;
