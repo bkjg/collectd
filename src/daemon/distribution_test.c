@@ -9,6 +9,18 @@
 /* TODO(bkjg): add checking errno */
 /* TODO(bkjg): add checking sum_gauges and counters in buckets */
 
+double *array_new_linear(size_t size, double diff) {
+  double *arr = calloc(size, sizeof(double));
+
+  for (size_t i = 0; i < size - 1; ++i) {
+    arr[i] = (double)(i + 1) * diff;
+  }
+
+  arr[size - 1] = INFINITY;
+
+  return arr;
+}
+
 DEF_TEST(distribution_new_linear) {
   struct {
     size_t num_buckets;
@@ -28,8 +40,13 @@ DEF_TEST(distribution_new_linear) {
       {
           .num_buckets = 10,
           .size = 2,
-          .want_get = (double[]){2, 4, 6, 8, 10, 12, 14, 16, 18, INFINITY},
-      }};
+          .want_get = array_new_linear(10, 2),
+      },
+      {
+        .num_buckets = 20,
+        .size = 0.67,
+        .want_get = array_new_linear(20, 0.67),
+        },};
 
   for (size_t i = 0; i < (sizeof(cases) / sizeof(cases[0])); ++i) {
     printf("## Case %zu:\n", i);
@@ -41,13 +58,22 @@ DEF_TEST(distribution_new_linear) {
       EXPECT_EQ_PTR(cases[i].want_get, d);
     } else {
       CHECK_NOT_NULL(d);
-      EXPECT_EQ_UINT64(cases[i].num_buckets, d->num_buckets);
+      EXPECT_EQ_UINT64(cases[i].num_buckets, distribution_get_num_buckets(d));
+
+      double *boundaries = distribution_get_buckets_boundaries(d);
+      uint64_t *counters = distribution_get_buckets_counters(d);
 
       for (size_t j = 0; j < cases[i].num_buckets; ++j) {
-        EXPECT_EQ_DOUBLE(cases[i].want_get[j], d->buckets[j].max_boundary);
+        EXPECT_EQ_DOUBLE(cases[i].want_get[j], boundaries[j]);
+        EXPECT_EQ_UINT64(0, counters[j]);
       }
+
+      EXPECT_EQ_DOUBLE(0, distribution_get_sum_gauges(d));
+      free(boundaries);
+      free(counters);
     }
 
+    free(cases[i].want_get);
     distribution_destroy(d);
   }
 
@@ -355,6 +381,11 @@ DEF_TEST(distribution_percentile) {
   return 0;
 }
 
+DEF_TEST(distribution_update) {
+
+  return 0;
+}
+
 int main(void) {
   RUN_TEST(distribution_new_linear);
   RUN_TEST(distribution_new_exponential);
@@ -362,6 +393,6 @@ int main(void) {
   RUN_TEST(distribution_clone);
   RUN_TEST(distribution_average);
   RUN_TEST(distribution_percentile);
-
+  RUN_TEST(distribution_update);
   END_TEST;
 }
