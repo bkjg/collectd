@@ -12,8 +12,29 @@
 double *array_new_linear(size_t size, double diff) {
   double *arr = calloc(size, sizeof(double));
 
+  if (arr == NULL) {
+    return NULL;
+  }
+
   for (size_t i = 0; i < size - 1; ++i) {
     arr[i] = (double)(i + 1) * diff;
+  }
+
+  arr[size - 1] = INFINITY;
+
+  return arr;
+}
+
+double *array_new_exponential(size_t size, double base, double factor) {
+  double *arr = calloc(size, sizeof(double));
+
+  if (arr == NULL) {
+    return NULL;
+  }
+
+  arr[0] = base * factor;
+  for (size_t i = 1; i < size - 1; ++i) {
+    arr[i] = arr[i - 1] * base;
   }
 
   arr[size - 1] = INFINITY;
@@ -103,7 +124,13 @@ DEF_TEST(distribution_new_exponential) {
           .num_buckets = 6,
           .initial_size = 2,
           .factor = 3,
-          .want_get = (double[]){6, 12, 24, 48, 96, INFINITY},
+          .want_get = array_new_exponential(6, 2, 3),
+      },
+      {
+        .num_buckets = 10,
+        .initial_size = 5,
+        .factor = 6.75,
+        .want_get = array_new_exponential(10, 5, 6.75),
       }};
 
   for (size_t i = 0; i < (sizeof(cases) / sizeof(cases[0])); ++i) {
@@ -116,13 +143,21 @@ DEF_TEST(distribution_new_exponential) {
       EXPECT_EQ_PTR(cases[i].want_get, d);
     } else {
       CHECK_NOT_NULL(d);
-      EXPECT_EQ_UINT64(cases[i].num_buckets, d->num_buckets);
+      EXPECT_EQ_UINT64(cases[i].num_buckets, distribution_get_num_buckets(d));
+      double *boundaries = distribution_get_buckets_boundaries(d);
+      uint64_t *counters = distribution_get_buckets_counters(d);
 
       for (size_t j = 0; j < cases[i].num_buckets; ++j) {
-        EXPECT_EQ_DOUBLE(cases[i].want_get[j], d->buckets[j].max_boundary);
+        EXPECT_EQ_DOUBLE(cases[i].want_get[j], boundaries[j]);
+        EXPECT_EQ_UINT64(0, counters[j]);
       }
+
+      EXPECT_EQ_DOUBLE(0, distribution_get_sum_gauges(d));
+      free(boundaries);
+      free(counters);
     }
 
+    free(cases[i].want_get);
     distribution_destroy(d);
   }
   return 0;
@@ -163,11 +198,18 @@ DEF_TEST(distribution_new_custom) {
       EXPECT_EQ_PTR(cases[i].want_get, d);
     } else {
       CHECK_NOT_NULL(d);
-      EXPECT_EQ_UINT64(cases[i].num_boundaries + 1, d->num_buckets);
+      EXPECT_EQ_UINT64(cases[i].num_boundaries + 1, distribution_get_num_buckets(d));
+      double *boundaries = distribution_get_buckets_boundaries(d);
+      uint64_t *counters = distribution_get_buckets_counters(d);
 
       for (size_t j = 0; j < cases[i].num_boundaries + 1; ++j) {
-        EXPECT_EQ_DOUBLE(cases[i].want_get[j], d->buckets[j].max_boundary);
+        EXPECT_EQ_DOUBLE(cases[i].want_get[j], boundaries[j]);
+        EXPECT_EQ_UINT64(0, counters[j]);
       }
+
+      EXPECT_EQ_DOUBLE(0, distribution_get_sum_gauges(d));
+      free(boundaries);
+      free(counters);
     }
 
     distribution_destroy(d);
