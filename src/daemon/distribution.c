@@ -268,10 +268,10 @@ static void bucket_update(bucket_t *buckets, size_t num_buckets, double gauge) {
   }
 }
 
-void distribution_update(distribution_t *d, double gauge) {
+int distribution_update(distribution_t *d, double gauge) {
   if (d == NULL) {
     errno = EINVAL;
-    return;
+    return EXIT_FAILURE;
   }
 
   pthread_mutex_lock(&d->mutex);
@@ -280,6 +280,8 @@ void distribution_update(distribution_t *d, double gauge) {
 
   d->sum_gauges += gauge;
   pthread_mutex_unlock(&d->mutex);
+
+  return EXIT_SUCCESS;
 }
 
 static double find_percentile(bucket_t *buckets, size_t num_buckets,

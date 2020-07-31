@@ -61,7 +61,7 @@ distribution_t *distribution_new_custom(size_t num_boundaries,
 /* function for updating the buckets
  * if the user will give the wrong argument, i.e. d will be null, then the
  * function will return and the errno will be set to EINVAL*/
-void distribution_update(distribution_t *d, double gauge);
+int distribution_update(distribution_t *d, double gauge);
 
 /* function  for getting the percentile
  * if the user will give the wrong argument, i.e. d will be null or percent
