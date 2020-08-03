@@ -71,10 +71,20 @@ uint64_t *distribution_get_buckets_counters(distribution_t *d) {
 }
 
 size_t distribution_get_num_buckets(distribution_t *d) {
+  if (d == NULL) {
+    errno = EINVAL;
+    return 0;
+  }
+
   return d->num_buckets;
 }
 
 double distribution_get_sum_gauges(distribution_t *d) {
+  if (d == NULL) {
+    errno = EINVAL;
+    return NAN;
+  }
+
   return d->sum_gauges;
 }
 
@@ -262,14 +272,14 @@ distribution_t *distribution_new_custom(size_t num_boundaries,
 static void bucket_update(bucket_t *buckets, size_t num_buckets, double gauge) {
   int idx = (int)num_buckets - 1;
 
-  while (buckets[idx].max_boundary > gauge && idx >= 0) {
+  while (idx >= 0 && buckets[idx].max_boundary > gauge) {
     buckets[idx].counter++;
     idx--;
   }
 }
 
 int distribution_update(distribution_t *d, double gauge) {
-  if (d == NULL) {
+  if (d == NULL || gauge < 0) {
     errno = EINVAL;
     return EXIT_FAILURE;
   }
