@@ -55,6 +55,11 @@ double *distribution_get_buckets_boundaries(distribution_t *d) {
 }
 
 uint64_t *distribution_get_buckets_counters(distribution_t *d) {
+  if (d == NULL) {
+    errno = EINVAL;
+    return NULL;
+  }
+
   uint64_t *counters = calloc(d->num_buckets, sizeof(uint64_t));
 
   if (counters == NULL) {
@@ -139,7 +144,7 @@ static bucket_t *bucket_new_linear(size_t num_buckets, double size) {
   return buckets;
 }
 
-static bucket_t *bucket_new_exponential(size_t num_buckets, double initial_size,
+static bucket_t *bucket_new_exponential(size_t num_buckets, double base,
                                         double factor) {
   bucket_t *buckets = calloc(num_buckets, sizeof(bucket_t));
 
@@ -147,11 +152,11 @@ static bucket_t *bucket_new_exponential(size_t num_buckets, double initial_size,
     return NULL;
   }
 
-  double multiplier = initial_size;
+  double multiplier = 1.0;
 
   for (size_t i = 0; i < num_buckets - 1; ++i) {
     buckets[i].max_boundary = factor * multiplier;
-    multiplier *= initial_size;
+    multiplier *= base;
   }
 
   buckets[num_buckets - 1].max_boundary = INFINITY;
@@ -218,10 +223,9 @@ distribution_t *distribution_new_linear(size_t num_buckets, double size) {
   return d;
 }
 
-distribution_t *distribution_new_exponential(size_t num_buckets,
-                                             double initial_size,
+distribution_t *distribution_new_exponential(size_t num_buckets, double base,
                                              double factor) {
-  if (num_buckets == 0 || initial_size <= 0 || factor <= 0) {
+  if (num_buckets == 0 || base <= 0 || factor <= 0) {
     errno = EINVAL;
     return NULL;
   }
@@ -232,10 +236,10 @@ distribution_t *distribution_new_exponential(size_t num_buckets,
     return NULL;
   }
 
-  /* as in distribution_new_linear: it would be nice to check if initial_size
+  /* as in distribution_new_linear: it would be nice to check if base
    * and factor are greater than zero, for consideration: one of them also
    * greater than one */
-  d->buckets = bucket_new_exponential(num_buckets, initial_size, factor);
+  d->buckets = bucket_new_exponential(num_buckets, base, factor);
 
   if (d->buckets == NULL) {
     free(d);
@@ -321,8 +325,8 @@ double distribution_percentile(distribution_t *d, double percent) {
 
   pthread_mutex_lock(&d->mutex);
 
-  uint64_t quantity =
-      (uint64_t)(percent / 100.0) * d->buckets[d->num_buckets - 1].counter;
+  uint64_t quantity = (uint64_t)(
+      (percent / 100.0) * (double)d->buckets[d->num_buckets - 1].counter);
 
   percent = find_percentile(d->buckets, d->num_buckets, quantity);
 

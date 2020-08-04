@@ -43,8 +43,7 @@ distribution_t *distribution_new_linear(size_t num_buckets, double size);
  * it will return null if any error occurred, for example - num_buckets is zero
  * or OS couldn't allocate the memory - then errno will contain the error code
  */
-distribution_t *distribution_new_exponential(size_t num_buckets,
-                                             double initial_size,
+distribution_t *distribution_new_exponential(size_t num_buckets, double base,
                                              double factor);
 /* function that create new distribution structure and initialize buckets using
  * custom buckets sizes given by the user
