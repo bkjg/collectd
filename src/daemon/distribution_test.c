@@ -10,6 +10,10 @@
 /* TODO(bkjg): add checking sum_gauges and counters in buckets */
 
 double *array_new_linear(size_t size, double diff) {
+  if (size == 0 || diff <= 0) {
+    return NULL;
+  }
+
   double *arr = calloc(size, sizeof(double));
 
   if (arr == NULL) {
@@ -32,7 +36,7 @@ double *array_new_exponential(size_t size, double base, double factor) {
     return NULL;
   }
 
-  arr[0] = base * factor;
+  arr[0] = factor;
   for (size_t i = 1; i < size - 1; ++i) {
     arr[i] = arr[i - 1] * base;
   }
@@ -47,27 +51,31 @@ DEF_TEST(distribution_new_linear) {
     size_t num_buckets;
     double size;
     double *want_get;
-  } cases[] = {
-      {
-          .num_buckets = 0,
-          .want_get = NULL,
-      },
-      {
-          .num_buckets = 10,
-          .size = -5,
-          .want_get = NULL,
-      },
-      {.num_buckets = 8, .size = 0, .want_get = NULL},
-      {
-          .num_buckets = 10,
-          .size = 2,
-          .want_get = array_new_linear(10, 2),
-      },
-      {
-        .num_buckets = 20,
-        .size = 0.67,
-        .want_get = array_new_linear(20, 0.67),
-        },};
+  } cases[] = {{
+                   .num_buckets = 0,
+                   .want_get = NULL,
+               },
+               {
+                   .num_buckets = 10,
+                   .size = -5,
+                   .want_get = NULL,
+               },
+               {.num_buckets = 8, .size = 0, .want_get = NULL},
+               {
+                   .num_buckets = 10,
+                   .size = 2,
+                   .want_get = array_new_linear(10, 2),
+               },
+               {
+                   .num_buckets = 20,
+                   .size = 0.67,
+                   .want_get = array_new_linear(20, 0.67),
+               },
+               {
+                   .num_buckets = 48,
+                   .size = 8.259,
+                   .want_get = array_new_linear(48, 8.259),
+               }};
 
   for (size_t i = 0; i < (sizeof(cases) / sizeof(cases[0])); ++i) {
     printf("## Case %zu:\n", i);
@@ -127,10 +135,16 @@ DEF_TEST(distribution_new_exponential) {
           .want_get = array_new_exponential(6, 2, 3),
       },
       {
-        .num_buckets = 10,
-        .initial_size = 5,
-        .factor = 6.75,
-        .want_get = array_new_exponential(10, 5, 6.75),
+          .num_buckets = 10,
+          .initial_size = 5,
+          .factor = 6.75,
+          .want_get = array_new_exponential(10, 5, 6.75),
+      },
+      {
+          .num_buckets = 26,
+          .initial_size = 1.01,
+          .factor = 4.64,
+          .want_get = array_new_exponential(26, 1.01, 4.64),
       }};
 
   for (size_t i = 0; i < (sizeof(cases) / sizeof(cases[0])); ++i) {
@@ -143,6 +157,7 @@ DEF_TEST(distribution_new_exponential) {
       EXPECT_EQ_PTR(cases[i].want_get, d);
     } else {
       CHECK_NOT_NULL(d);
+
       EXPECT_EQ_UINT64(cases[i].num_buckets, distribution_get_num_buckets(d));
       double *boundaries = distribution_get_buckets_boundaries(d);
       uint64_t *counters = distribution_get_buckets_counters(d);
@@ -198,7 +213,8 @@ DEF_TEST(distribution_new_custom) {
       EXPECT_EQ_PTR(cases[i].want_get, d);
     } else {
       CHECK_NOT_NULL(d);
-      EXPECT_EQ_UINT64(cases[i].num_boundaries + 1, distribution_get_num_buckets(d));
+      EXPECT_EQ_UINT64(cases[i].num_boundaries + 1,
+                       distribution_get_num_buckets(d));
       double *boundaries = distribution_get_buckets_boundaries(d);
       uint64_t *counters = distribution_get_buckets_counters(d);
 
@@ -213,6 +229,138 @@ DEF_TEST(distribution_new_custom) {
     }
 
     distribution_destroy(d);
+  }
+
+  return 0;
+}
+
+DEF_TEST(distribution_update) {
+  distribution_t *dist_test1 = distribution_new_linear(15, 34.834);
+  distribution_t *dist_test2 = distribution_new_exponential(25, 1.673, 6.8);
+  distribution_t *dist_test3 = distribution_new_custom(
+      18, (double[]){1, 5, 25, 125, 625, 1000, 1001, 1005, 1025, 1125, 1625,
+                     2000, 2001, 2005, 2025, 2125, 2625, 3000});
+  struct {
+    size_t num_buckets;
+    uint64_t *counters;
+    distribution_t *d;
+    double *gauges;
+    int num_queries;
+    int *status_codes;
+    double want_sum;
+    double want_percentile;
+    double want_average;
+    double percent;
+  } cases[] = {
+      {
+          .num_buckets = 0,
+          .num_queries = 1,
+          .d = NULL,
+          .status_codes = (int[]){EXIT_FAILURE},
+          .gauges = (double[]){54.6},
+          .want_sum = NAN,
+          .want_average = NAN,
+          .want_percentile = NAN,
+          .percent = 15.9,
+      },
+      {
+          .num_buckets = 15,
+          .d = dist_test1,
+          .num_queries = 16,
+          .gauges = (double[]){5, 1, 6.74, 23.54, 52.6435, 23.523, 6554.534,
+                               87.543, 135.34, 280.43, 100.624, 40.465, -78.213,
+                               -90.423, -1423.423, -9.432},
+          .status_codes =
+              (int[]){0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, EXIT_FAILURE,
+                      EXIT_FAILURE, EXIT_FAILURE, EXIT_FAILURE},
+          .want_sum = 7311.3825,
+          .want_average = 609.281875,
+          .want_percentile = 34.834,
+          .percent = 15.67,
+          .counters = (uint64_t[]){5, 7, 9, 10, 10, 10, 10, 10, 11, 11, 11, 11,
+                                   11, 11, 12},
+      },
+      {
+          .num_buckets = 25,
+          .d = dist_test2,
+          .gauges = (double[]){10.45,        26.43,           98.84,
+                               1067.27,      905.326,         46.7242,
+                               205.653,      542.876,         24543.543,
+                               35262.6345,   64262.24624,     8753.635,
+                               26.264,       675645.346346,   764.436,
+                               2345.56,      23456.789,       65543.6456,
+                               10583.72023,  896496.6532,     738563.5723,
+                               23562.534652, 5325927.253234,  5237452.523523,
+                               462383.25235, 7936583.3734475, 9000,
+                               6.8,          11.3764,         19.0327172},
+          .num_queries = 30,
+          .want_sum = 21544097.760940,
+          .want_average = 718136.592031,
+          .percent = 90.345,
+          .want_percentile = 939540.606494,
+          .status_codes =
+              (int[]){0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+          .counters =
+              (uint64_t[]){0,  2,  3,  6,  7,  7,  8,  9,  9,  10, 13, 13, 14,
+                           14, 16, 17, 20, 21, 23, 23, 23, 23, 24, 27, 30},
+      },
+      {
+          .num_buckets = 19,
+          .d = dist_test3,
+          .gauges = (double[]){1, 5.43, 6.42626, 625, 625.1, 624.999999, 1000,
+                               999.999999, 0, 999999, 1001, -1},
+          .status_codes =
+              (int[]){0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, EXIT_FAILURE},
+          .num_queries = 12,
+          .percent = 0,
+          .want_percentile = 1,
+          .want_average = 91353.450569,
+          .want_sum = 1004887.956258,
+          .counters = (uint64_t[]){1, 2, 4, 4, 5, 8, 9, 10, 10, 10, 10, 10, 10,
+                                   10, 10, 10, 10, 10, 11},
+      },
+  };
+
+  for (size_t i = 0; i < (sizeof(cases) / sizeof(cases[0])); ++i) {
+    printf("## Case %zu:\n", i);
+
+    for (int j = 0; j < cases[i].num_queries; ++j) {
+      EXPECT_EQ_INT(cases[i].status_codes[j],
+                    distribution_update(cases[i].d, cases[i].gauges[j]));
+    }
+
+    EXPECT_EQ_UINT64(cases[i].num_buckets,
+                     distribution_get_num_buckets(cases[i].d));
+
+    uint64_t *counters = distribution_get_buckets_counters(cases[i].d);
+
+    if (counters != NULL) {
+      for (size_t j = 0; j < cases[i].num_buckets; ++j) {
+        EXPECT_EQ_UINT64(cases[i].counters[j], counters[j]);
+      }
+      free(counters);
+    }
+
+    char buffer[256];
+    double sum = distribution_get_sum_gauges(cases[i].d);
+    double average = distribution_average(cases[i].d);
+    double percentile = distribution_percentile(cases[i].d, cases[i].percent);
+
+    snprintf(buffer, 256, "%.6lf", sum);
+    sscanf(buffer, "%lf", &sum);
+
+    snprintf(buffer, 256, "%.6lf", average);
+    sscanf(buffer, "%lf", &average);
+
+    snprintf(buffer, 256, "%.6lf", percentile);
+    sscanf(buffer, "%lf", &percentile);
+
+    EXPECT_EQ_DOUBLE(cases[i].want_sum, sum);
+    EXPECT_EQ_DOUBLE(cases[i].want_average, average);
+    EXPECT_EQ_DOUBLE(cases[i].want_percentile, percentile);
+
+    distribution_destroy(cases[i].d);
   }
 
   return 0;
@@ -345,96 +493,180 @@ DEF_TEST(distribution_average) {
 }
 
 DEF_TEST(distribution_percentile) {
-  /* TODO(bkjg): add test when sum_gauges is equal zero and when there is only
-   * one gauge inside */
-  /* e.g. 4.576, 6.432, 8.432, 10.423, 11.54,
-   * 20.423, 29.312
-   * 40.231, 42.423, 44.432
-   * 50.12, 53.32, 54.543, 57.423, 58.423, 59.2141
-   * 80.342, 90.4235456, 100.3425, 150.34 */
-  bucket_t case2_buckets[] = {
-      {
-          .max_boundary = 15,
-          .counter = 5,
-      },
-      {
-          .max_boundary = 30,
-          .counter = 7,
-      },
-      {
-          .max_boundary = 45,
-          .counter = 10,
-      },
-      {
-          .max_boundary = 60,
-          .counter = 16,
-      },
-      {
-          .max_boundary = INFINITY,
-          .counter = 20,
-      },
-  };
-  distribution_t case2_distribution = {
-      .buckets = case2_buckets,
-      .num_buckets = 5,
-      .sum_gauges = 972.7151456,
-  };
+  distribution_t *dist_test = distribution_new_linear(5, 15.0);
 
   struct {
     distribution_t *input_dist;
     double percent;
-    double want_get;
+    double want_percentile;
+    double *gauges;
+    int num_queries;
+    uint64_t *counters;
+    int num_buckets;
+    double sum_gauges;
   } cases[] = {
       {
           .input_dist = NULL,
-          .want_get = NAN,
+          .want_percentile = NAN,
+          .num_queries = 0,
+          .num_buckets = 0,
+          .sum_gauges = NAN,
       },
       {
-          .input_dist = &case2_distribution,
+          .input_dist = dist_test,
           .percent = -5,
-          .want_get = NAN,
+          .want_percentile = NAN,
+          .num_queries = 0,
+          .num_buckets = 5,
+          .counters = (uint64_t[]){0, 0, 0, 0, 0},
+          .sum_gauges = 0,
       },
       {
-          .input_dist = &case2_distribution,
+          .num_queries = 4,
+          .gauges = (double[]){4.576, 6.432, 8.432, 10.423},
           .percent = 110.9,
-          .want_get = NAN,
+          .want_percentile = NAN,
+          .num_buckets = 5,
+          .counters = (uint64_t[]){4, 4, 4, 4, 4},
+          .sum_gauges = 29.863,
       },
       {
-          .input_dist = &case2_distribution,
+          .num_queries = 1,
+          .gauges = (double[]){90.4235456},
           .percent = -0.12,
-          .want_get = NAN,
+          .want_percentile = NAN,
+          .num_buckets = 5,
+          .counters = (uint64_t[]){4, 4, 4, 4, 5},
+          .sum_gauges = 120.286546,
       },
       {
-          /* bin search - looped itself */
-          .input_dist = &case2_distribution,
           .percent = 5.67,
-          .want_get = 15,
+          .want_percentile = 15,
+          .num_queries = 15,
+          .num_buckets = 5,
+          .gauges = (double[]){11.54, 20.423, 29.312, 40.231, 42.423, 44.432,
+                               50.12, 53.32, 54.543, 57.423, 58.423, 59.2141,
+                               80.342, 100.3425, 150.34},
+          .counters = (uint64_t[]){5, 7, 10, 16, 20},
+          .sum_gauges = 972.715146,
       },
-  };
+      {
+          .percent = 100,
+          .want_percentile = INFINITY,
+          .num_queries = 0,
+          .num_buckets = 5,
+          .sum_gauges = 972.715146,
+          .counters = (uint64_t[]){5, 7, 10, 16, 20},
+      }};
 
   for (size_t i = 0; i < (sizeof(cases) / sizeof(cases[0])); ++i) {
     printf("## Case %zu:\n", i);
 
-    EXPECT_EQ_DOUBLE(
-        cases[i].want_get,
-        distribution_percentile(cases[i].input_dist, cases[i].percent));
+    if (i > 0 && cases[i - 1].input_dist != NULL) {
+      cases[i].input_dist = distribution_clone(cases[i - 1].input_dist);
+
+      EXPECT_EQ_INT(1, distribution_check_equal(cases[i].input_dist,
+                                                cases[i - 1].input_dist));
+    }
+
+    for (int j = 0; j < cases[i].num_queries; ++j) {
+      // EXPECT_EQ_INT(cases[i].status_codes[j],
+      distribution_update(cases[i].input_dist, cases[i].gauges[j]);
+    }
+
+    EXPECT_EQ_UINT64(cases[i].num_buckets,
+                     distribution_get_num_buckets(cases[i].input_dist));
+
+    uint64_t *counters = distribution_get_buckets_counters(cases[i].input_dist);
+
+    if (counters != NULL) {
+      for (size_t j = 0; j < cases[i].num_buckets; ++j) {
+        EXPECT_EQ_UINT64(cases[i].counters[j], counters[j]);
+      }
+      free(counters);
+    }
+
+    char buffer[256];
+    double sum = distribution_get_sum_gauges(cases[i].input_dist);
+    // double average = distribution_average(cases[i].input_dist);
+    double percentile =
+        distribution_percentile(cases[i].input_dist, cases[i].percent);
+
+    snprintf(buffer, 256, "%.6lf", sum);
+    sscanf(buffer, "%lf", &sum);
+
+    /*snprintf(buffer, 256, "%.6lf", average);
+    sscanf(buffer, "%lf", &average);*/
+
+    EXPECT_EQ_DOUBLE(cases[i].sum_gauges, sum);
+    // EXPECT_EQ_DOUBLE(cases[i].want_average, average);
+    EXPECT_EQ_DOUBLE(cases[i].want_percentile, percentile);
+  }
+
+  for (size_t i = 0; i < (sizeof(cases) / sizeof(cases[0])); ++i) {
+    distribution_destroy(cases[i].input_dist);
   }
 
   return 0;
 }
 
-DEF_TEST(distribution_update) {
+DEF_TEST(distribution_get_num_buckets) {
+  distribution_t *dist_test1 = distribution_new_linear(5, 15.0);
+  distribution_t *dist_test2 = distribution_new_exponential(14, 1.5, 4);
+  distribution_t *dist_test3 = distribution_new_custom(
+      28,
+      (double[]){1,          4,           6,          19.3,       65.35,
+                 98.9423,    904.4321,    1000.432,   7894.90145, 8000.5472,
+                 9000.852,   10942.11,    11443,      89002.432,  90423.62,
+                 95326.54,   97642.90,    100432.75,  109543.62,  209536.3543,
+                 500426.626, 635690.62,   790426.268, 800738.374, 1000436.637,
+                 1111111.98, 1234567.890, 2345678.901});
+  distribution_t *dist_test4 = distribution_new_linear(30, 1.5);
+
+  struct {
+    distribution_t *input_dist;
+    int num_buckets;
+  } cases[] = {{
+                   .input_dist = NULL,
+                   .num_buckets = 0,
+               },
+               {
+                   .input_dist = dist_test1,
+                   .num_buckets = 5,
+               },
+               {
+                   .input_dist = dist_test2,
+                   .num_buckets = 14,
+               },
+               {
+                   .input_dist = dist_test3,
+                   .num_buckets = 29,
+               },
+               {
+                   .input_dist = dist_test4,
+                   .num_buckets = 30,
+               }};
+
+  for (size_t i = 0; i < (sizeof(cases) / sizeof(cases[0])); ++i) {
+    EXPECT_EQ_UINT64(cases[i].num_buckets,
+                     distribution_get_num_buckets(cases[i].input_dist));
+
+    distribution_destroy(cases[i].input_dist);
+  }
 
   return 0;
 }
+
+
 
 int main(void) {
   RUN_TEST(distribution_new_linear);
   RUN_TEST(distribution_new_exponential);
   RUN_TEST(distribution_new_custom);
-  RUN_TEST(distribution_clone);
-  RUN_TEST(distribution_average);
-  RUN_TEST(distribution_percentile);
   RUN_TEST(distribution_update);
+  RUN_TEST(distribution_percentile);
+  RUN_TEST(distribution_average);
+  RUN_TEST(distribution_clone);
+  RUN_TEST(distribution_get_num_buckets);
   END_TEST;
 }
