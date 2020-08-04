@@ -367,10 +367,11 @@ DEF_TEST(distribution_update) {
       free(counters);
     }
 
-    char buffer[256];
+    static const int MAX_BUFFER = 256;
+    char buffer[MAX_BUFFER];
     double sum = distribution_get_sum_gauges(cases[i].d);
 
-    snprintf(buffer, 256, "%.6lf", sum);
+    snprintf(buffer, MAX_BUFFER, "%.6lf", sum);
     sscanf(buffer, "%lf", &sum);
 
     EXPECT_EQ_DOUBLE(cases[i].want_sum, sum);
@@ -500,9 +501,10 @@ DEF_TEST(distribution_average) {
       distribution_update(cases[i].input_dist, cases[i].gauges[j]);
     }
 
-    char buffer[256];
+    static const int MAX_BUFFER = 256;
+    char buffer[MAX_BUFFER];
     double average = distribution_average(cases[i].input_dist);
-    snprintf(buffer, 256, "%.6lf", average);
+    snprintf(buffer, MAX_BUFFER, "%.6lf", average);
     sscanf(buffer, "%lf", &average);
 
     EXPECT_EQ_DOUBLE(cases[i].want_get, average);
@@ -977,9 +979,10 @@ DEF_TEST(distribution_get_sum_gauges) {
       distribution_update(cases[i].input_dist, cases[i].gauges[j]);
     }
 
-    char buffer[256];
+    static const int MAX_BUFFER = 256;
+    char buffer[MAX_BUFFER];
     double sum = distribution_get_sum_gauges(cases[i].input_dist);
-    snprintf(buffer, 256, "%.6lf", sum);
+    snprintf(buffer, MAX_BUFFER, "%.6lf", sum);
     sscanf(buffer, "%lf", &sum);
     EXPECT_EQ_DOUBLE(cases[i].want_sum_gauges, sum);
 
