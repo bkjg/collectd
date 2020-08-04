@@ -90,8 +90,16 @@ distribution_t *distribution_clone(distribution_t *d);
  * null pointer */
 void distribution_destroy(distribution_t *d);
 
-/* TODO(bkjg): add description of this function and improve previous
+/* TODO(bkjg): add descriptions of these functions and improve previous
  * descriptions */
 bool distribution_check_equal(distribution_t *d1, distribution_t *d2);
+
+double *distribution_get_buckets_boundaries(distribution_t *d);
+
+uint64_t *distribution_get_buckets_counters(distribution_t *d);
+
+size_t distribution_get_num_buckets(distribution_t *d);
+
+double distribution_get_sum_gauges(distribution_t *d);
 
 #endif // DISTRIBUTION_H
