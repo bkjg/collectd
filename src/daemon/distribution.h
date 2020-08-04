@@ -43,8 +43,7 @@ distribution_t *distribution_new_linear(size_t num_buckets, double size);
  * it will return null if any error occurred, for example - num_buckets is zero
  * or OS couldn't allocate the memory - then errno will contain the error code
  */
-distribution_t *distribution_new_exponential(size_t num_buckets,
-                                             double initial_size,
+distribution_t *distribution_new_exponential(size_t num_buckets, double base,
                                              double factor);
 /* function that create new distribution structure and initialize buckets using
  * custom buckets sizes given by the user
@@ -61,7 +60,7 @@ distribution_t *distribution_new_custom(size_t num_boundaries,
 /* function for updating the buckets
  * if the user will give the wrong argument, i.e. d will be null, then the
  * function will return and the errno will be set to EINVAL*/
-void distribution_update(distribution_t *d, double gauge);
+int distribution_update(distribution_t *d, double gauge);
 
 /* function  for getting the percentile
  * if the user will give the wrong argument, i.e. d will be null or percent
@@ -91,8 +90,16 @@ distribution_t *distribution_clone(distribution_t *d);
  * null pointer */
 void distribution_destroy(distribution_t *d);
 
-/* TODO(bkjg): add description of this function and improve previous
+/* TODO(bkjg): add descriptions of these functions and improve previous
  * descriptions */
 bool distribution_check_equal(distribution_t *d1, distribution_t *d2);
+
+double *distribution_get_buckets_boundaries(distribution_t *d);
+
+uint64_t *distribution_get_buckets_counters(distribution_t *d);
+
+size_t distribution_get_num_buckets(distribution_t *d);
+
+double distribution_get_sum_gauges(distribution_t *d);
 
 #endif // DISTRIBUTION_H

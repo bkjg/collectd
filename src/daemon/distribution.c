@@ -40,6 +40,64 @@ struct distribution_s {
   pthread_mutex_t mutex;
 };
 
+double *distribution_get_buckets_boundaries(distribution_t *d) {
+  if (d == NULL) {
+    errno = EINVAL;
+    return NULL;
+  }
+
+  double *boundaries = calloc(d->num_buckets, sizeof(double));
+
+  if (boundaries == NULL) {
+    return NULL;
+  }
+
+  for (size_t i = 0; i < d->num_buckets; ++i) {
+    boundaries[i] = d->buckets[i].max_boundary;
+  }
+
+  return boundaries;
+}
+
+uint64_t *distribution_get_buckets_counters(distribution_t *d) {
+  if (d == NULL) {
+    errno = EINVAL;
+    return NULL;
+  }
+
+  uint64_t *counters = calloc(d->num_buckets, sizeof(uint64_t));
+
+  if (counters == NULL) {
+    return NULL;
+  }
+
+  pthread_mutex_lock(&d->mutex);
+  for (size_t i = 0; i < d->num_buckets; ++i) {
+    counters[i] = d->buckets[i].counter;
+  }
+  pthread_mutex_unlock(&d->mutex);
+
+  return counters;
+}
+
+size_t distribution_get_num_buckets(distribution_t *d) {
+  if (d == NULL) {
+    errno = EINVAL;
+    return 0;
+  }
+
+  return d->num_buckets;
+}
+
+double distribution_get_sum_gauges(distribution_t *d) {
+  if (d == NULL) {
+    errno = EINVAL;
+    return NAN;
+  }
+
+  return d->sum_gauges;
+}
+
 bool distribution_check_equal(distribution_t *d1, distribution_t *d2) {
   if ((d1 == NULL && d2 != NULL) || (d1 != NULL && d2 == NULL)) {
     return false;
@@ -91,7 +149,7 @@ static bucket_t *bucket_new_linear(size_t num_buckets, double size) {
   return buckets;
 }
 
-static bucket_t *bucket_new_exponential(size_t num_buckets, double initial_size,
+static bucket_t *bucket_new_exponential(size_t num_buckets, double base,
                                         double factor) {
   bucket_t *buckets = calloc(num_buckets, sizeof(bucket_t));
 
@@ -99,11 +157,11 @@ static bucket_t *bucket_new_exponential(size_t num_buckets, double initial_size,
     return NULL;
   }
 
-  double multiplier = initial_size;
+  double multiplier = 1.0;
 
   for (size_t i = 0; i < num_buckets - 1; ++i) {
     buckets[i].max_boundary = factor * multiplier;
-    multiplier *= initial_size;
+    multiplier *= base;
   }
 
   buckets[num_buckets - 1].max_boundary = INFINITY;
@@ -120,7 +178,8 @@ static bucket_t *bucket_new_custom(size_t num_boundaries,
   }
 
   if (num_boundaries > 0) {
-    if (custom_buckets_boundaries[0] <= 0) {
+    if (custom_buckets_boundaries[0] <= 0 ||
+        custom_buckets_boundaries[0] == INFINITY) {
       free(buckets);
       errno = EINVAL;
       return NULL;
@@ -130,6 +189,7 @@ static bucket_t *bucket_new_custom(size_t num_boundaries,
 
     for (size_t i = 1; i < num_boundaries; ++i) {
       if (custom_buckets_boundaries[i] <= 0 ||
+          custom_buckets_boundaries[i] == INFINITY ||
           custom_buckets_boundaries[i - 1] >= custom_buckets_boundaries[i]) {
         free(buckets);
         errno = EINVAL;
@@ -170,10 +230,9 @@ distribution_t *distribution_new_linear(size_t num_buckets, double size) {
   return d;
 }
 
-distribution_t *distribution_new_exponential(size_t num_buckets,
-                                             double initial_size,
+distribution_t *distribution_new_exponential(size_t num_buckets, double base,
                                              double factor) {
-  if (num_buckets == 0 || initial_size <= 0 || factor <= 0) {
+  if (num_buckets == 0 || base <= 0 || factor <= 0) {
     errno = EINVAL;
     return NULL;
   }
@@ -184,10 +243,10 @@ distribution_t *distribution_new_exponential(size_t num_buckets,
     return NULL;
   }
 
-  /* as in distribution_new_linear: it would be nice to check if initial_size
+  /* as in distribution_new_linear: it would be nice to check if base
    * and factor are greater than zero, for consideration: one of them also
    * greater than one */
-  d->buckets = bucket_new_exponential(num_buckets, initial_size, factor);
+  d->buckets = bucket_new_exponential(num_buckets, base, factor);
 
   if (d->buckets == NULL) {
     free(d);
@@ -224,16 +283,16 @@ distribution_t *distribution_new_custom(size_t num_boundaries,
 static void bucket_update(bucket_t *buckets, size_t num_buckets, double gauge) {
   int idx = (int)num_buckets - 1;
 
-  while (buckets[idx].max_boundary > gauge && idx >= 0) {
+  while (idx >= 0 && buckets[idx].max_boundary > gauge) {
     buckets[idx].counter++;
     idx--;
   }
 }
 
-void distribution_update(distribution_t *d, double gauge) {
-  if (d == NULL) {
+int distribution_update(distribution_t *d, double gauge) {
+  if (d == NULL || gauge < 0) {
     errno = EINVAL;
-    return;
+    return EXIT_FAILURE;
   }
 
   pthread_mutex_lock(&d->mutex);
@@ -242,6 +301,8 @@ void distribution_update(distribution_t *d, double gauge) {
 
   d->sum_gauges += gauge;
   pthread_mutex_unlock(&d->mutex);
+
+  return EXIT_SUCCESS;
 }
 
 static double find_percentile(bucket_t *buckets, size_t num_buckets,
@@ -271,8 +332,8 @@ double distribution_percentile(distribution_t *d, double percent) {
 
   pthread_mutex_lock(&d->mutex);
 
-  uint64_t quantity =
-      (uint64_t)(percent / 100.0) * d->buckets[d->num_buckets - 1].counter;
+  uint64_t quantity = (uint64_t)(
+      (percent / 100.0) * (double)d->buckets[d->num_buckets - 1].counter);
 
   percent = find_percentile(d->buckets, d->num_buckets, quantity);
 
