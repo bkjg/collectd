@@ -41,6 +41,11 @@ struct distribution_s {
 };
 
 double *distribution_get_buckets_boundaries(distribution_t *d) {
+  if (d == NULL) {
+    errno = EINVAL;
+    return NULL;
+  }
+
   double *boundaries = calloc(d->num_buckets, sizeof(double));
 
   if (boundaries == NULL) {
