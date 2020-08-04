@@ -763,7 +763,7 @@ DEF_TEST(distribution_get_buckets_counters) {
           .gauges = (double[]){1, 2, 3, 5, 10, 90, 8, 45, 44, 41.45, 40.5},
           .num_buckets = 10,
           .counters = (uint64_t[]){3, 5, 6, 6, 6, 6, 6, 6, 9, 11},
-          .sum_gauges = 0,
+          .sum_gauges = 289.95,
       },
       {
           .input_dist = dist_test2,
@@ -773,7 +773,7 @@ DEF_TEST(distribution_get_buckets_counters) {
                          7.53, 11.235, 4.43256, 7.432, 3, 3.01, 2.98},
           .num_buckets = 8,
           .counters = (uint64_t[]){3, 5, 8, 8, 10, 12, 12, 16},
-          .sum_gauges = 29.863,
+          .sum_gauges = 232.84156,
       },
       {
           .input_dist = dist_test3,
@@ -782,14 +782,13 @@ DEF_TEST(distribution_get_buckets_counters) {
                                10.923, 90.432, 145.90, 144, 143.999999, 190},
           .num_buckets = 12,
           .counters = (uint64_t[]){5, 6, 7, 9, 9, 10, 10, 10, 10, 10, 12, 15},
-          .sum_gauges = 120.286546,
+          .sum_gauges = 738.357298,
       }};
 
   for (size_t i = 0; i < (sizeof(cases) / sizeof(cases[0])); ++i) {
     printf("## Case %zu:\n", i);
 
     for (int j = 0; j < cases[i].num_queries; ++j) {
-      // EXPECT_EQ_INT(cases[i].status_codes[j],
       distribution_update(cases[i].input_dist, cases[i].gauges[j]);
     }
 
@@ -808,8 +807,181 @@ DEF_TEST(distribution_get_buckets_counters) {
       free(counters);
     }
 
-    //double sum = distribution_get_sum_gauges(cases[i].input_dist);
-    //EXPECT_EQ_DOUBLE(cases[i].sum_gauges, sum);
+    EXPECT_EQ_DOUBLE(cases[i].sum_gauges,
+                     distribution_get_sum_gauges(cases[i].input_dist));
+    distribution_destroy(cases[i].input_dist);
+  }
+
+  return 0;
+}
+
+DEF_TEST(distribution_check_equal) {
+  distribution_t *dist_test11 = distribution_new_linear(15, 17.97);
+  distribution_t *dist_test22 = distribution_new_exponential(19, 1.497, 7.9);
+  distribution_t *dist_test31 = distribution_new_exponential(15, 2.1, 3);
+  distribution_t *dist_test32 = distribution_new_exponential(15, 2.1, 3.0001);
+  distribution_t *dist_test41 = distribution_new_linear(8, 21);
+  distribution_t *dist_test42 = distribution_new_custom(
+      7, (double[]){21, 42, 63, 84, 105, 126, 147});
+
+  struct {
+    distribution_t *input_dist1;
+    distribution_t *input_dist2;
+    double *gauges1;
+    double *gauges2;
+    int num_queries1;
+    int num_queries2;
+    int want_get;
+  } cases[] = {
+      {
+          .input_dist1 = NULL,
+          .input_dist2 = NULL,
+          .num_queries1 = 0,
+          .num_queries2 = 0,
+          .want_get = 1,
+      },
+      {
+          .input_dist1 = dist_test11,
+          .input_dist2 = NULL,
+          .num_queries1 = 17,
+          .num_queries2 = 0,
+          .gauges1 =
+              (double[]){64.986822, 75.361073, 291.412027, 0.209184, 25.542358,
+                         207.719335, 228.715725, 120.862435, 50.335099,
+                         78.147062, 103.449701, 45.456052, 120.827738,
+                         39.133311, 66.804762, 256.750525, 42.075292},
+      },
+      {
+          .input_dist1 = NULL,
+          .input_dist2 = dist_test22,
+          .num_queries1 = 0,
+          .num_queries2 = 21,
+          .gauges2 =
+              (double[]){39443.618618, 24339.664702, 21573.536089, 29609.30347,
+                         2926.352621,  14058.673966, 4660.770634,  29783.728304,
+                         34311.842208, 8530.487236,  19927.009242, 15188.572656,
+                         971.651245,   16269.067161, 2591.089086,  22718.987438,
+                         28344.842898, 17402.4872,   31390.581462, 24385.094319,
+                         29730.582344},
+      },
+      {
+          .input_dist1 = dist_test31,
+          .input_dist2 = dist_test32,
+          .num_queries1 = 15,
+          .num_queries2 = 15,
+          .gauges1 =
+              (double[]){91162.43496, 72940.539939, 84641.174039, 97027.221525,
+                         84159.235853, 91894.852013, 52426.443153, 27785.207936,
+                         14766.938133, 94843.147406, 79763.869899, 32806.450583,
+                         74097.374659, 3293.59171, 6341.594074},
+          .gauges2 =
+              (double[]){91162.43496, 72940.539939, 84641.174039, 97027.221525,
+                         84159.235853, 91894.852013, 52426.443153, 27785.207936,
+                         14766.938133, 94843.147406, 79763.869899, 32806.450583,
+                         74097.374659, 3293.59171, 6341.594074},
+      },
+      {
+          .input_dist1 = dist_test41,
+          .input_dist2 = dist_test42,
+          .num_queries1 = 17,
+          .num_queries2 = 17,
+          .gauges1 = (double[]){122.793488, 73.629423, 85.238252, 171.841943,
+                                189.006106, 92.612949, 83.502165, 139.368244,
+                                27.286445, 77.298995, 56.650835, 163.273312,
+                                142.017526, 162.949669, 31.717699, 38.69047,
+                                175.971837},
+          .gauges2 = (double[]){122.793488, 73.629423, 85.238252, 171.841943,
+                                189.006106, 92.612949, 83.502165, 139.368244,
+                                27.286445, 77.298995, 56.650835, 163.273312,
+                                142.017526, 162.949669, 31.717699, 38.69047,
+                                175.971837},
+          .want_get = 1,
+      }};
+
+  for (size_t i = 0; i < (sizeof(cases) / sizeof(cases[0])); ++i) {
+    printf("## Case %zu:\n", i);
+
+    for (int j = 0; j < cases[i].num_queries1; ++j) {
+      distribution_update(cases[i].input_dist1, cases[i].gauges1[j]);
+    }
+
+    for (int j = 0; j < cases[i].num_queries2; ++j) {
+      distribution_update(cases[i].input_dist2, cases[i].gauges2[j]);
+    }
+
+    EXPECT_EQ_INT(
+        cases[i].want_get,
+        distribution_check_equal(cases[i].input_dist1, cases[i].input_dist2));
+
+    distribution_destroy(cases[i].input_dist1);
+    distribution_destroy(cases[i].input_dist2);
+  }
+
+  return 0;
+}
+
+DEF_TEST(distribution_get_sum_gauges) {
+  distribution_t *dist_test1 = distribution_new_linear(10, 5.0);
+  distribution_t *dist_test2 = distribution_new_exponential(8, 1.5, 2);
+  distribution_t *dist_test3 = distribution_new_custom(
+      11, (double[]){1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144});
+
+  struct {
+    distribution_t *input_dist;
+    double *gauges;
+    int num_queries;
+    double sum_gauges;
+  } cases[] = {
+      {
+          .input_dist = NULL,
+          .num_queries = 0,
+          .sum_gauges = NAN,
+      },
+      {
+          .input_dist = dist_test1,
+          .num_queries = 19,
+          .gauges = (double[]){103.022105, 171.636117, 116.488605, 28.172234,
+                               36.809295, 105.699156, 95.190406, 173.762403,
+                               105.859558, 105.500904, 42.080885, 145.297908,
+                               109.747067, 183.684136, 27.112998, 43.693238,
+                               184.177938, 138.033766, 171.255309},
+          .sum_gauges = 2087.224028,
+      },
+      {
+          .input_dist = dist_test2,
+          .num_queries = 18,
+          .gauges = (double[]){1314.386028, 713.040721, 388.600533, 2194.733454,
+                               62.713018, 436.076538, 154.274781, 467.571249,
+                               1956.153932, 1884.719494, 1744.740075,
+                               715.797969, 686.73603, 223.723816, 202.431405,
+                               1640.915258, 1236.700456, 1328.934664},
+          .sum_gauges = 17352.249421,
+      },
+      {
+          .input_dist = dist_test3,
+          .num_queries = 21,
+          .gauges = (double[]){85.440604,  89.039631,  197.239067, 20.809416,
+                               23.130686,  109.073608, 236.542966, 158.416868,
+                               30.537857,  155.668704, 202.337704, 127.671802,
+                               33.857584,  95.56406,   63.416192,  188.410385,
+                               140.583885, 96.033746,  70.10835,   110.265126,
+                               95.71921},
+          .sum_gauges = 2329.867451,
+      }};
+
+  for (size_t i = 0; i < (sizeof(cases) / sizeof(cases[0])); ++i) {
+    printf("## Case %zu:\n", i);
+
+    for (int j = 0; j < cases[i].num_queries; ++j) {
+      distribution_update(cases[i].input_dist, cases[i].gauges[j]);
+    }
+
+    char buffer[256];
+    double sum = distribution_get_sum_gauges(cases[i].input_dist);
+    snprintf(buffer, 256, "%.6lf", sum);
+    sscanf(buffer, "%lf", &sum);
+    EXPECT_EQ_DOUBLE(cases[i].sum_gauges, sum);
+
     distribution_destroy(cases[i].input_dist);
   }
 
@@ -827,5 +999,8 @@ int main(void) {
   RUN_TEST(distribution_get_num_buckets);
   RUN_TEST(distribution_get_buckets_boundaries);
   RUN_TEST(distribution_get_buckets_counters);
+  RUN_TEST(distribution_get_sum_gauges);
+  RUN_TEST(distribution_check_equal);
+
   END_TEST;
 }
