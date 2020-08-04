@@ -1,8 +1,8 @@
 #include "collectd.h"
-
-#include "distribution.c"
 #include "distribution.h"
 #include "testing.h"
+
+#include <math.h>
 
 double *array_new_linear(size_t size, double diff) {
   if (size == 0 || diff <= 0) {
