@@ -178,7 +178,8 @@ static bucket_t *bucket_new_custom(size_t num_boundaries,
   }
 
   if (num_boundaries > 0) {
-    if (custom_buckets_boundaries[0] <= 0) {
+    if (custom_buckets_boundaries[0] <= 0 ||
+        custom_buckets_boundaries[0] == INFINITY) {
       free(buckets);
       errno = EINVAL;
       return NULL;
@@ -188,6 +189,7 @@ static bucket_t *bucket_new_custom(size_t num_boundaries,
 
     for (size_t i = 1; i < num_boundaries; ++i) {
       if (custom_buckets_boundaries[i] <= 0 ||
+          custom_buckets_boundaries[i] == INFINITY ||
           custom_buckets_boundaries[i - 1] >= custom_buckets_boundaries[i]) {
         free(buckets);
         errno = EINVAL;
