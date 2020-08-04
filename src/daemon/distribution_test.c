@@ -8,6 +8,8 @@
  * proper size */
 /* TODO(bkjg): add checking errno */
 /* TODO(bkjg): add checking sum_gauges and counters in buckets */
+/* TODO(bkjg): add checking if called function changed the content of
+ * distribution_t structure */
 
 double *array_new_linear(size_t size, double diff) {
   if (size == 0 || diff <= 0) {
