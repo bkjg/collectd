@@ -544,7 +544,7 @@ DEF_TEST(distribution_percentile) {
           .want_err = EINVAL,
       },
       {
-        .input_dist = dist_test2,
+          .input_dist = dist_test2,
           .num_queries = 4,
           .gauges = (double[]){2.43, 8.98, 76.432, 423.4323},
           .percent = 110.9,
@@ -552,7 +552,7 @@ DEF_TEST(distribution_percentile) {
           .want_err = EINVAL,
       },
       {
-        .input_dist = dist_test3,
+          .input_dist = dist_test3,
           .num_queries = 1,
           .gauges = (double[]){84.90},
           .percent = -0.12,
@@ -560,13 +560,14 @@ DEF_TEST(distribution_percentile) {
           .want_err = EINVAL,
       },
       {
-        .input_dist = dist_test4,
+          .input_dist = dist_test4,
           .percent = 5.67,
           .want_percentile = 15,
           .num_queries = 15,
-          .gauges = (double[]){4.576, 6.432, 90.4235456, 8.432, 10.423, 11.54, 20.423, 29.312, 40.231, 42.423, 44.432,
-                               50.12, 53.32, 54.543, 57.423, 58.423, 59.2141,
-                               80.342, 100.3425, 150.34},
+          .gauges = (double[]){4.576,  6.432,   90.4235456, 8.432,    10.423,
+                               11.54,  20.423,  29.312,     40.231,   42.423,
+                               44.432, 50.12,   53.32,      54.543,   57.423,
+                               58.423, 59.2141, 80.342,     100.3425, 150.34},
       },
       {
           .input_dist = dist_test5,
