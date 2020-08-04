@@ -4,8 +4,6 @@
 #include "distribution.h"
 #include "testing.h"
 
-/* TODO(bkjg): add checking the size of returned array if is it equal to the
- * proper size */
 /* TODO(bkjg): add checking errno */
 /* TODO(bkjg): add checking sum_gauges and counters in buckets */
 /* TODO(bkjg): add checking if called function changed the content of
@@ -659,7 +657,81 @@ DEF_TEST(distribution_get_num_buckets) {
   return 0;
 }
 
+DEF_TEST(distribution_get_buckets_boundaries) {
+    distribution_t *dist_test1 = distribution_new_linear(5, 15.0);
+  distribution_t *dist_test2 = distribution_new_exponential(14, 1.5, 4);
+  distribution_t *dist_test3 = distribution_new_custom(
+      28,
+      (double[]){1,          4,           6,          19.3,       65.35,
+                 98.9423,    904.4321,    1000.432,   7894.90145, 8000.5472,
+                 9000.852,   10942.11,    11443,      89002.432,  90423.62,
+                 95326.54,   97642.90,    100432.75,  109543.62,  209536.3543,
+                 500426.626, 635690.62,   790426.268, 800738.374, 1000436.637,
+                 1111111.98, 1234567.890, 2345678.901});
+  distribution_t *dist_test4 = distribution_new_linear(30, 1.5);
 
+  struct {
+    distribution_t *input_dist;
+    int num_buckets;
+    double *want_boundaries;
+    int cannot_be_free;
+  } cases[] = {{
+                   .input_dist = NULL,
+                   .want_boundaries = NULL,
+                   .num_buckets = 0,
+               },
+               {
+                   .input_dist = dist_test1,
+                   .num_buckets = 5,
+                   .want_boundaries = array_new_linear(5, 15.0),
+               },
+               {
+                   .input_dist = dist_test2,
+                   .num_buckets = 14,
+                   .want_boundaries = array_new_exponential(14, 1.5, 4),
+               },
+               {
+                   .input_dist = dist_test3,
+                   .num_buckets = 29,
+                   .want_boundaries = (double[]){1,          4,           6,          19.3,       65.35,
+                 98.9423,    904.4321,    1000.432,   7894.90145, 8000.5472,
+                 9000.852,   10942.11,    11443,      89002.432,  90423.62,
+                 95326.54,   97642.90,    100432.75,  109543.62,  209536.3543,
+                 500426.626, 635690.62,   790426.268, 800738.374, 1000436.637,
+                 1111111.98, 1234567.890, 2345678.901, INFINITY},
+                 .cannot_be_free = 1,
+               },
+               {
+                   .input_dist = dist_test4,
+                   .num_buckets = 30,
+                   .want_boundaries = array_new_linear(30, 1.5),
+               }};
+
+  for (size_t i = 0; i < (sizeof(cases) / sizeof(cases[0])); ++i) {
+    EXPECT_EQ_UINT64(cases[i].num_buckets,
+                     distribution_get_num_buckets(cases[i].input_dist));
+
+    double *boundaries = distribution_get_buckets_boundaries(cases[i].input_dist);
+
+    if (cases[i].want_boundaries == NULL) {
+      EXPECT_EQ_PTR(cases[i].want_boundaries, boundaries);
+    } else {
+      CHECK_NOT_NULL(boundaries);
+      for (size_t j = 0; j < cases[i].num_buckets; ++j) {
+        EXPECT_EQ_DOUBLE(cases[i].want_boundaries[j], boundaries[j]);
+      }
+      free(boundaries);
+
+      if (cases[i].cannot_be_free == 0) {
+        free(cases[i].want_boundaries);
+      }
+    }
+
+    distribution_destroy(cases[i].input_dist);
+  }
+
+  return 0;
+}
 
 int main(void) {
   RUN_TEST(distribution_new_linear);
@@ -670,5 +742,6 @@ int main(void) {
   RUN_TEST(distribution_average);
   RUN_TEST(distribution_clone);
   RUN_TEST(distribution_get_num_buckets);
+  RUN_TEST(distribution_get_buckets_boundaries);
   END_TEST;
 }
