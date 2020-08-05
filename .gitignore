@@ -1,5 +1,6 @@
 .idea
 cmake-build-debug
+CMakeLists.txt
 
 # build.sh stuff:
 Makefile.in
