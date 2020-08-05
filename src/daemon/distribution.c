@@ -307,7 +307,17 @@ int distribution_update(distribution_t *d, double gauge) {
 
 static double find_percentile(bucket_t *buckets, size_t num_buckets,
                               uint64_t quantity) {
-  size_t left = 0;
+  if (num_buckets < 62) {
+    int idx;
+    for (int i = 0; i < num_buckets; ++i) {
+      if (buckets[i].counter >= quantity) {
+        idx = i;
+      }
+    }
+
+    return buckets[idx].max_boundary;
+  } else {
+    size_t left = 0;
   size_t right = num_buckets - 1;
   size_t middle;
 
@@ -322,6 +332,8 @@ static double find_percentile(bucket_t *buckets, size_t num_buckets,
   }
 
   return buckets[left].max_boundary;
+  }
+
 }
 
 double distribution_percentile(distribution_t *d, double percent) {
