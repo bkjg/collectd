@@ -160,8 +160,8 @@ void run_distribution_clone(distribution_t *d, int max_size,
   }
 }
 
-int main() {
-  static const int MAX_SIZE = 100000;
+int main(int argc, char *argv[]) {
+  static const int MAX_SIZE = 1000000;
   static const int MAX_TURNS = 100;
   static const int NUM_DISTS = 3;
 
@@ -173,23 +173,27 @@ int main() {
   uint64_t *elapsed_time_average = calloc(1, sizeof(uint64_t));
   uint64_t *elapsed_time_clone = calloc(1, sizeof(uint64_t));
 
+  if (argc < 2) {
+    fprintf(stderr, "Usage %s NUM_DISTRIBUTIONS\n", argv[0]);
+    exit(EXIT_FAILURE);
+  }
+
+  int num_dists = atoi(argv[1]);
+
+  double *custom_values = calloc(num_dists - 1, sizeof(double));
+
+  srand(time(NULL));
+  double prev = 0;
+  for (int i = 0; i < num_dists - 1; ++i) {
+    custom_values[i] = (rand() / (double)RAND_MAX) + (rand() % (int)1e6 + prev) + 1;
+    prev = custom_values[i];
+  }
+
   distribution_t *dists[NUM_DISTS];
-  dists[0] = distribution_new_linear(50, 124.543);
-  dists[1] = distribution_new_exponential(50, 1.24543, 9);
+  dists[0] = distribution_new_linear(num_dists, 124.543);
+  dists[1] = distribution_new_exponential(num_dists, 1.24543, 9);
   dists[2] = distribution_new_custom(
-      50, (double[]){755.384227,    1904.461413,   4211.399562,   8731.514392,
-                     9632.999741,   11571.079506,  14857.476580,  23354.050924,
-                     24910.147702,  24923.471081,  29928.720396,  29954.806259,
-                     31151.986212,  34484.854599,  37304.902522,  38743.259528,
-                     39946.535399,  42313.083732,  42664.653045,  42853.862497,
-                     44799.530462,  50899.834602,  55688.641054,  58185.986540,
-                     58588.067283,  60753.190469,  61514.099602,  61523.755980,
-                     62167.505244,  69937.349131,  72081.568033,  72278.342695,
-                     77941.730677,  78697.820813,  79006.794968,  80964.618037,
-                     83871.189686,  84848.958981,  88158.735096,  88901.947690,
-                     96060.648686,  97358.065199,  98299.644175,  99763.703514,
-                     101239.978394, 101265.988319, 102885.914889, 104214.454458,
-                     107902.630901, 110894.526514});
+      num_dists - 1, custom_values); 
 
   for (int i = 0; i < MAX_TURNS; ++i) {
     run_distribution_new_linear(MAX_SIZE, elapsed_time_new_linear);
@@ -228,5 +232,6 @@ int main() {
     distribution_destroy(dists[i]);
   }
 
+  free(custom_values);
   return 0;
 }
