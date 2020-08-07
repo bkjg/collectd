@@ -1,97 +1,31 @@
 #include "collectd.h"
 #include "distribution.h"
 
-void run_distribution_new_linear(int num_buckets, int max_size,
-                                 uint64_t *elapsed_time) {
-  distribution_t *dist_linear[max_size];
-  struct timespec start, end;
-
-  double diff = (double)(rand() / (double)RAND_MAX) + (rand() % (int)1e6) + 1.0;
-
-  clock_gettime(CLOCK_MONOTONIC, &start);
-  for (int i = 0; i < max_size; ++i) {
-    dist_linear[i] = distribution_new_linear(num_buckets, diff);
-  }
-  clock_gettime(CLOCK_MONOTONIC, &end);
-
-  *elapsed_time += (uint64_t)1e9 * (end.tv_sec - start.tv_sec) +
-                   (end.tv_nsec - start.tv_nsec);
-
-  for (int i = 0; i < max_size; ++i) {
-    distribution_destroy(dist_linear[i]);
-  }
-}
-
-void run_distribution_new_exponential(int num_buckets, int max_size,
-                                      uint64_t *elapsed_time) {
-  distribution_t *dist_exponential[max_size];
-  struct timespec start, end;
-
-  double base = (double)(rand() / (double)RAND_MAX) + (rand() % 3);
-  double factor =
-      (double)(rand() / (double)RAND_MAX) + (rand() % (int)1e6) + 1.0;
-
-  clock_gettime(CLOCK_MONOTONIC, &start);
-  for (int i = 0; i < max_size; ++i) {
-    dist_exponential[i] =
-        distribution_new_exponential(num_buckets, base, factor);
-  }
-  clock_gettime(CLOCK_MONOTONIC, &end);
-
-  *elapsed_time += (uint64_t)1e9 * (end.tv_sec - start.tv_sec) +
-                   (end.tv_nsec - start.tv_nsec);
-
-  for (int i = 0; i < max_size; ++i) {
-    distribution_destroy(dist_exponential[i]);
-  }
-}
-
-void run_distribution_new_custom(int num_buckets, int max_size,
-                                 uint64_t *elapsed_time) {
-  distribution_t *dist_custom[max_size];
-  struct timespec start, end;
-
-  double *custom_values = calloc(num_buckets - 1, sizeof(double));
-
-  srand(time(NULL));
-  double prev = 0;
-  for (int i = 0; i < num_buckets - 1; ++i) {
-    custom_values[i] =
-        (rand() / (double)RAND_MAX) + (rand() % (int)1e6 + prev) + 1;
-    prev = custom_values[i];
-  }
-
-  clock_gettime(CLOCK_MONOTONIC, &start);
-  for (int i = 0; i < max_size; ++i) {
-    dist_custom[i] = distribution_new_custom(num_buckets, custom_values);
-  }
-  clock_gettime(CLOCK_MONOTONIC, &end);
-
-  *elapsed_time += (uint64_t)1e9 * (end.tv_sec - start.tv_sec) +
-                   (end.tv_nsec - start.tv_nsec);
-
-  free(custom_values);
-  for (int i = 0; i < max_size; ++i) {
-    distribution_destroy(dist_custom[i]);
-  }
-}
-
 void run_distribution_mixed(distribution_t *d, int max_size,
                             uint64_t *elapsed_time) {
   if (d == NULL) {
     return;
   }
 
-  srand(time(NULL));
-
   struct timespec start, end;
 
+  double updates[max_size * 9 + 1];
+  double percents[max_size];
+
+  for (int i = 0; i < max_size; ++i) {
+    for (int j = 0; j < max_size; ++j) {
+      updates[i * max_size + j] =
+          (rand() / (double)RAND_MAX) + (rand() % (int)1e6);
+    }
+
+    percents[i] = (rand() / (double)RAND_MAX) + (rand() % 100);
+  }
   clock_gettime(CLOCK_MONOTONIC, &start);
   for (int j = 0; j < max_size; ++j) {
     for (int i = 0; i < 9; ++i) {
-      distribution_update(d, (rand() / (double)RAND_MAX) + (rand() % (int)1e6));
+      distribution_update(d, updates[j * max_size + i]);
     }
-    distribution_percentile(d, (rand() / (double)RAND_MAX) + (rand() % 100));
+    distribution_percentile(d, percents[j]);
   }
   clock_gettime(CLOCK_MONOTONIC, &end);
 
@@ -105,13 +39,17 @@ void run_distribution_update(distribution_t *d, int max_size,
     return;
   }
 
-  srand(time(NULL));
-
   struct timespec start, end;
+
+  double updates[max_size];
+
+  for (int i = 0; i < max_size; ++i) {
+    updates[i] = (rand() / (double)RAND_MAX) + (rand() % (int)1e6);
+  }
 
   clock_gettime(CLOCK_MONOTONIC, &start);
   for (int i = 0; i < max_size; ++i) {
-    distribution_update(d, (rand() / (double)RAND_MAX) + (rand() % (int)1e6));
+    distribution_update(d, updates[i]);
   }
   clock_gettime(CLOCK_MONOTONIC, &end);
 
@@ -125,59 +63,22 @@ void run_distribution_percentile(distribution_t *d, int max_size,
     return;
   }
 
-  srand(time(NULL));
-
   struct timespec start, end;
+
+  double percents[max_size];
+
+  for (int i = 0; i < max_size; ++i) {
+    percents[i] = (rand() / (double)RAND_MAX) + (rand() % 100);
+  }
 
   clock_gettime(CLOCK_MONOTONIC, &start);
   for (int i = 0; i < max_size; ++i) {
-    distribution_percentile(d, (rand() / (double)RAND_MAX) + (rand() % (int)100));
+    distribution_percentile(d, percents[i]);
   }
   clock_gettime(CLOCK_MONOTONIC, &end);
 
   *elapsed_time += (uint64_t)1e9 * (end.tv_sec - start.tv_sec) +
                    (end.tv_nsec - start.tv_nsec);
-}
-
-void run_distribution_average(distribution_t *d, int max_size,
-                              uint64_t *elapsed_time) {
-  if (d == NULL) {
-    return;
-  }
-
-  struct timespec start, end;
-
-  clock_gettime(CLOCK_MONOTONIC, &start);
-  for (int i = 0; i < max_size; ++i) {
-    distribution_average(d);
-  }
-  clock_gettime(CLOCK_MONOTONIC, &end);
-
-  *elapsed_time += (uint64_t)1e9 * (end.tv_sec - start.tv_sec) +
-                   (end.tv_nsec - start.tv_nsec);
-}
-
-void run_distribution_clone(distribution_t *d, int max_size,
-                            uint64_t *elapsed_time) {
-  if (d == NULL) {
-    return;
-  }
-
-  distribution_t *dists[max_size];
-  struct timespec start, end;
-
-  clock_gettime(CLOCK_MONOTONIC, &start);
-  for (int i = 0; i < max_size; ++i) {
-    dists[i] = distribution_clone(d);
-  }
-  clock_gettime(CLOCK_MONOTONIC, &end);
-
-  *elapsed_time += (uint64_t)1e9 * (end.tv_sec - start.tv_sec) +
-                   (end.tv_nsec - start.tv_nsec);
-
-  for (int i = 0; i < max_size; ++i) {
-    distribution_destroy(dists[i]);
-  }
 }
 
 int main(int argc, char *argv[]) {
