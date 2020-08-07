@@ -1,8 +1,6 @@
 #!/bin/bash
 
-for i in {0..20}
+for i in {1..200}
 do
-  echo Calculating benchmark for: $((2 ** $i))
-  ./distribution_benchmark $((2 ** $i))
-  echo End calculating benchmark
+  ./distribution_benchmark $((20 * $i))
 done

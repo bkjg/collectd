@@ -76,24 +76,42 @@ void run_distribution_new_custom(int num_buckets, int max_size,
   }
 }
 
+void run_distribution_mixed(distribution_t *d, int max_size,
+                            uint64_t *elapsed_time) {
+  if (d == NULL) {
+    return;
+  }
+
+  srand(time(NULL));
+
+  struct timespec start, end;
+
+  clock_gettime(CLOCK_MONOTONIC, &start);
+  for (int j = 0; j < max_size; ++j) {
+    for (int i = 0; i < 9; ++i) {
+      distribution_update(d, (rand() / (double)RAND_MAX) + (rand() % (int)1e6));
+    }
+    distribution_percentile(d, (rand() / (double)RAND_MAX) + (rand() % 100));
+  }
+  clock_gettime(CLOCK_MONOTONIC, &end);
+
+  *elapsed_time += (uint64_t)1e9 * (end.tv_sec - start.tv_sec) +
+                   (end.tv_nsec - start.tv_nsec);
+}
+
 void run_distribution_update(distribution_t *d, int max_size,
                              uint64_t *elapsed_time) {
   if (d == NULL) {
     return;
   }
 
-  double gauges[max_size];
   srand(time(NULL));
-
-  for (int i = 0; i < max_size; ++i) {
-    gauges[i] = (rand() / (double)RAND_MAX) + (rand() % (int)1e6);
-  }
 
   struct timespec start, end;
 
   clock_gettime(CLOCK_MONOTONIC, &start);
   for (int i = 0; i < max_size; ++i) {
-    distribution_update(d, gauges[i]);
+    distribution_update(d, (rand() / (double)RAND_MAX) + (rand() % (int)1e6));
   }
   clock_gettime(CLOCK_MONOTONIC, &end);
 
@@ -107,18 +125,13 @@ void run_distribution_percentile(distribution_t *d, int max_size,
     return;
   }
 
-  double percents[max_size];
   srand(time(NULL));
-
-  for (int i = 0; i < max_size; ++i) {
-    percents[i] = (rand() / (double)RAND_MAX) + (rand() % (int)100);
-  }
 
   struct timespec start, end;
 
   clock_gettime(CLOCK_MONOTONIC, &start);
   for (int i = 0; i < max_size; ++i) {
-    distribution_percentile(d, percents[i]);
+    distribution_percentile(d, (rand() / (double)RAND_MAX) + (rand() % (int)100));
   }
   clock_gettime(CLOCK_MONOTONIC, &end);
 
@@ -168,17 +181,13 @@ void run_distribution_clone(distribution_t *d, int max_size,
 }
 
 int main(int argc, char *argv[]) {
-  static const int MAX_SIZE = 1000000;
-  static const int MAX_TURNS = 100;
+  static const int MAX_SIZE = 2000000;
+  static const int MAX_TURNS = 10;
   static const int NUM_DISTS = 3;
 
-  uint64_t *elapsed_time_new_linear = calloc(1, sizeof(uint64_t));
-  uint64_t *elapsed_time_new_exponential = calloc(1, sizeof(uint64_t));
-  uint64_t *elapsed_time_new_custom = calloc(1, sizeof(uint64_t));
   uint64_t *elapsed_time_update = calloc(1, sizeof(uint64_t));
   uint64_t *elapsed_time_percentile = calloc(1, sizeof(uint64_t));
-  uint64_t *elapsed_time_average = calloc(1, sizeof(uint64_t));
-  uint64_t *elapsed_time_clone = calloc(1, sizeof(uint64_t));
+  uint64_t *elapsed_time_mixed = calloc(1, sizeof(uint64_t));
 
   if (argc < 2) {
     fprintf(stderr, "Usage %s NUM_BUCKETS\n", argv[0]);
@@ -203,39 +212,21 @@ int main(int argc, char *argv[]) {
   dists[2] = distribution_new_custom(num_buckets - 1, custom_values);
 
   for (int i = 0; i < MAX_TURNS; ++i) {
-    run_distribution_new_linear(num_buckets, MAX_SIZE, elapsed_time_new_linear);
-    run_distribution_new_exponential(num_buckets, MAX_SIZE,
-                                     elapsed_time_new_exponential);
-    run_distribution_new_custom(num_buckets, MAX_SIZE, elapsed_time_new_custom);
     run_distribution_update(dists[i % NUM_DISTS], MAX_SIZE,
                             elapsed_time_update);
     run_distribution_percentile(dists[i % NUM_DISTS], MAX_SIZE,
                                 elapsed_time_percentile);
-    run_distribution_average(dists[i % NUM_DISTS], MAX_SIZE,
-                             elapsed_time_average);
-    run_distribution_clone(dists[i % NUM_DISTS], MAX_SIZE, elapsed_time_clone);
+    run_distribution_mixed(dists[i % NUM_DISTS], MAX_SIZE / 10,
+                           elapsed_time_mixed);
   }
 
-  printf("distribution_new_linear: %lf\n",
-         (double)*elapsed_time_new_linear / 1e9);
-  printf("distribution_new_exponential: %lf\n",
-         (double)*elapsed_time_new_exponential / 1e9);
-  printf("distribution_new_custom: %lf\n",
-         (double)*elapsed_time_new_custom / 1e9);
-  printf("distribution_update: %lf\n", (double)*elapsed_time_update / 1e9);
-  printf("distribution_percentile: %lf\n",
-         (double)*elapsed_time_percentile / 1e9);
-  printf("distribution_average: %lf\n", (double)*elapsed_time_average / 1e9);
-  printf("distribution_clone: %lf\n", (double)*elapsed_time_clone / 1e9);
+  printf("%d,%lf,%lf,%lf\n", num_buckets, (double)*elapsed_time_update / 1e9,
+         (double)*elapsed_time_percentile / 1e9,
+         (double)*elapsed_time_mixed / 1e9);
 
-  free(elapsed_time_new_linear);
-  free(elapsed_time_new_exponential);
-  free(elapsed_time_new_custom);
   free(elapsed_time_update);
   free(elapsed_time_percentile);
-  free(elapsed_time_average);
-  free(elapsed_time_clone);
-
+  free(elapsed_time_mixed);
   for (int i = 0; i < NUM_DISTS; ++i) {
     distribution_destroy(dists[i]);
   }
