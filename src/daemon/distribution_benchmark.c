@@ -1,7 +1,8 @@
 #include "collectd.h"
 #include "distribution.h"
 
-void run_distribution_new_linear(int num_buckets, int max_size, uint64_t *elapsed_time) {
+void run_distribution_new_linear(int num_buckets, int max_size,
+                                 uint64_t *elapsed_time) {
   distribution_t *dist_linear[max_size];
   struct timespec start, end;
 
@@ -21,16 +22,19 @@ void run_distribution_new_linear(int num_buckets, int max_size, uint64_t *elapse
   }
 }
 
-void run_distribution_new_exponential(int num_buckets, int max_size, uint64_t *elapsed_time) {
+void run_distribution_new_exponential(int num_buckets, int max_size,
+                                      uint64_t *elapsed_time) {
   distribution_t *dist_exponential[max_size];
   struct timespec start, end;
 
   double base = (double)(rand() / (double)RAND_MAX) + (rand() % 3);
-  double factor = (double)(rand() / (double)RAND_MAX) + (rand() % (int)1e6) + 1.0;
+  double factor =
+      (double)(rand() / (double)RAND_MAX) + (rand() % (int)1e6) + 1.0;
 
   clock_gettime(CLOCK_MONOTONIC, &start);
   for (int i = 0; i < max_size; ++i) {
-    dist_exponential[i] = distribution_new_exponential(num_buckets, base, factor);
+    dist_exponential[i] =
+        distribution_new_exponential(num_buckets, base, factor);
   }
   clock_gettime(CLOCK_MONOTONIC, &end);
 
@@ -42,7 +46,8 @@ void run_distribution_new_exponential(int num_buckets, int max_size, uint64_t *e
   }
 }
 
-void run_distribution_new_custom(int num_buckets, int max_size, uint64_t *elapsed_time) {
+void run_distribution_new_custom(int num_buckets, int max_size,
+                                 uint64_t *elapsed_time) {
   distribution_t *dist_custom[max_size];
   struct timespec start, end;
 
@@ -51,14 +56,14 @@ void run_distribution_new_custom(int num_buckets, int max_size, uint64_t *elapse
   srand(time(NULL));
   double prev = 0;
   for (int i = 0; i < num_buckets - 1; ++i) {
-    custom_values[i] = (rand() / (double)RAND_MAX) + (rand() % (int)1e6 + prev) + 1;
+    custom_values[i] =
+        (rand() / (double)RAND_MAX) + (rand() % (int)1e6 + prev) + 1;
     prev = custom_values[i];
   }
 
   clock_gettime(CLOCK_MONOTONIC, &start);
   for (int i = 0; i < max_size; ++i) {
-    dist_custom[i] = distribution_new_custom(
-        num_buckets, custom_values);
+    dist_custom[i] = distribution_new_custom(num_buckets, custom_values);
   }
   clock_gettime(CLOCK_MONOTONIC, &end);
 
@@ -176,7 +181,7 @@ int main(int argc, char *argv[]) {
   uint64_t *elapsed_time_clone = calloc(1, sizeof(uint64_t));
 
   if (argc < 2) {
-    fprintf(stderr, "Usage %s NUM_DISTRIBUTIONS\n", argv[0]);
+    fprintf(stderr, "Usage %s NUM_BUCKETS\n", argv[0]);
     exit(EXIT_FAILURE);
   }
 
@@ -187,19 +192,20 @@ int main(int argc, char *argv[]) {
   srand(time(NULL));
   double prev = 0;
   for (int i = 0; i < num_buckets - 1; ++i) {
-    custom_values[i] = (rand() / (double)RAND_MAX) + (rand() % (int)1e6 + prev) + 1;
+    custom_values[i] =
+        (rand() / (double)RAND_MAX) + (rand() % (int)1e6 + prev) + 1;
     prev = custom_values[i];
   }
 
   distribution_t *dists[NUM_DISTS];
   dists[0] = distribution_new_linear(num_buckets, 124.543);
   dists[1] = distribution_new_exponential(num_buckets, 1.24543, 9);
-  dists[2] = distribution_new_custom(
-      num_buckets - 1, custom_values);
+  dists[2] = distribution_new_custom(num_buckets - 1, custom_values);
 
   for (int i = 0; i < MAX_TURNS; ++i) {
     run_distribution_new_linear(num_buckets, MAX_SIZE, elapsed_time_new_linear);
-    run_distribution_new_exponential(num_buckets, MAX_SIZE, elapsed_time_new_exponential);
+    run_distribution_new_exponential(num_buckets, MAX_SIZE,
+                                     elapsed_time_new_exponential);
     run_distribution_new_custom(num_buckets, MAX_SIZE, elapsed_time_new_custom);
     run_distribution_update(dists[i % NUM_DISTS], MAX_SIZE,
                             elapsed_time_update);
