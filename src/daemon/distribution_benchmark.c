@@ -1,6 +1,11 @@
 #include "collectd.h"
 #include "distribution.h"
 
+#define MAX_SIZE 2000000
+
+double updates[MAX_SIZE];
+double percents[MAX_SIZE];
+
 void run_distribution_mixed(distribution_t *d, int max_size,
                             uint64_t *elapsed_time) {
   if (d == NULL) {
@@ -9,12 +14,9 @@ void run_distribution_mixed(distribution_t *d, int max_size,
 
   struct timespec start, end;
 
-  double updates[max_size * 9 + 1];
-  double percents[max_size];
-
   for (int i = 0; i < max_size; ++i) {
-    for (int j = 0; j < max_size; ++j) {
-      updates[i * max_size + j] =
+    for (int j = 0; j < 9; ++j) {
+      updates[i * 9 + j] =
           (rand() / (double)RAND_MAX) + (rand() % (int)1e6);
     }
 
@@ -23,7 +25,7 @@ void run_distribution_mixed(distribution_t *d, int max_size,
   clock_gettime(CLOCK_MONOTONIC, &start);
   for (int j = 0; j < max_size; ++j) {
     for (int i = 0; i < 9; ++i) {
-      distribution_update(d, updates[j * max_size + i]);
+      distribution_update(d, updates[j * 9 + i]);
     }
     distribution_percentile(d, percents[j]);
   }
@@ -40,8 +42,6 @@ void run_distribution_update(distribution_t *d, int max_size,
   }
 
   struct timespec start, end;
-
-  double updates[max_size];
 
   for (int i = 0; i < max_size; ++i) {
     updates[i] = (rand() / (double)RAND_MAX) + (rand() % (int)1e6);
@@ -65,8 +65,6 @@ void run_distribution_percentile(distribution_t *d, int max_size,
 
   struct timespec start, end;
 
-  double percents[max_size];
-
   for (int i = 0; i < max_size; ++i) {
     percents[i] = (rand() / (double)RAND_MAX) + (rand() % 100);
   }
@@ -82,7 +80,6 @@ void run_distribution_percentile(distribution_t *d, int max_size,
 }
 
 int main(int argc, char *argv[]) {
-  static const int MAX_SIZE = 2000000;
   static const int MAX_TURNS = 10;
   static const int NUM_DISTS = 3;
 
@@ -117,7 +114,7 @@ int main(int argc, char *argv[]) {
                             elapsed_time_update);
     run_distribution_percentile(dists[i % NUM_DISTS], MAX_SIZE,
                                 elapsed_time_percentile);
-    run_distribution_mixed(dists[i % NUM_DISTS], MAX_SIZE / 10,
+    run_distribution_mixed(dists[i % NUM_DISTS], (MAX_SIZE / 10),
                            elapsed_time_mixed);
   }
 
