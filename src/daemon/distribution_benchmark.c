@@ -16,8 +16,7 @@ void run_distribution_mixed(distribution_t *d, int max_size,
 
   for (int i = 0; i < max_size; ++i) {
     for (int j = 0; j < 9; ++j) {
-      updates[i * 9 + j] =
-          (rand() / (double)RAND_MAX) + (rand() % (int)1e6);
+      updates[i * 9 + j] = (rand() / (double)RAND_MAX) + (rand() % (int)1e6);
     }
 
     percents[i] = (rand() / (double)RAND_MAX) + (rand() % 100);
@@ -132,4 +131,3 @@ int main(int argc, char *argv[]) {
   free(custom_values);
   return 0;
 }
-
