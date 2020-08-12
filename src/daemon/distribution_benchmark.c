@@ -1,7 +1,7 @@
 #include "collectd.h"
 #include "distribution.h"
 
-#define MAX_SIZE 2000000
+#define MAX_SIZE 1000000
 #define LINEAR_DISTRIBUTION 0
 #define EXPONENTIAL_DISTRIBUTION 1
 #define CUSTOM_DISTRIBUTION 2
@@ -86,7 +86,7 @@ void run_distribution_percentile(distribution_t *d, int max_size,
 }
 
 int main(int argc, char *argv[]) {
-  static const int MAX_TURNS = 10;
+  static const int MAX_TURNS = 1;
   static const int NUM_DISTS = 3;
 
   uint64_t elapsed_time_update = 0;
@@ -150,7 +150,7 @@ int main(int argc, char *argv[]) {
                            &elapsed_time_mixed);
   }
 
-  printf("%d,%lf,%lf,%lf\n", num_buckets, (double)elapsed_time_update / 1e9,
+  printf("%d,%lf,%lf,%lf,", num_buckets, (double)elapsed_time_update / 1e9,
          (double)elapsed_time_percentile / 1e9,
          (double)elapsed_time_mixed / 1e9);
 
@@ -184,7 +184,7 @@ int main(int argc, char *argv[]) {
                            &elapsed_time_mixed);
   }
 
-  printf("%d,%lf,%lf,%lf,", num_buckets, (double)elapsed_time_update / 1e9,
+  printf("%d,%lf,%lf,%lf\n", num_buckets, (double)elapsed_time_update / 1e9,
          (double)elapsed_time_percentile / 1e9,
          (double)elapsed_time_mixed / 1e9);
 
