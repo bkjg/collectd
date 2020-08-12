@@ -52,6 +52,7 @@ double *distribution_get_buckets_boundaries(distribution_t *d) {
     return NULL;
   }
 
+  /* boundaries won't change, so we don't have to lock the mutex */
   for (size_t i = 0; i < d->num_buckets; ++i) {
     boundaries[i] = d->buckets[i].max_boundary;
   }
@@ -232,7 +233,7 @@ distribution_t *distribution_new_linear(size_t num_buckets, double size) {
 
 distribution_t *distribution_new_exponential(size_t num_buckets, double base,
                                              double factor) {
-  if (num_buckets == 0 || base <= 0 || factor <= 0) {
+  if (num_buckets == 0 || base <= 1 || factor <= 0) {
     errno = EINVAL;
     return NULL;
   }
