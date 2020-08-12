@@ -2,10 +2,14 @@
 #include "distribution.h"
 
 #define MAX_SIZE 2000000
+#define LINEAR_DISTRIBUTION 0
+#define EXPONENTIAL_DISTRIBUTION 1
+#define CUSTOM_DISTRIBUTION 2
 
 double updates[MAX_SIZE];
 double percents[MAX_SIZE];
-/* variable to which we save the return value from the measured functions to make sure that compiler won't delete these lines */
+/* variable to which we save the return value from the measured functions to
+ * make sure that compiler won't delete these lines */
 volatile double result;
 
 void run_distribution_mixed(distribution_t *d, int max_size,
@@ -102,9 +106,9 @@ int main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  /* if num_buckets will be 1, then calloc can return a null or a valid pointer that can be freed
-   * however it won't be any issue with that because the distribution_new_custom function
-   * can handle that */
+  /* if num_buckets will be 1, then calloc can return a null or a valid pointer
+   * that can be freed however it won't be any issue with that because the
+   * distribution_new_custom function can handle that */
   double *custom_values = calloc(num_buckets - 1, sizeof(double));
 
   srand(time(NULL));
@@ -138,15 +142,49 @@ int main(int argc, char *argv[]) {
   }
 
   for (int i = 0; i < MAX_TURNS; ++i) {
-    run_distribution_update(dists[i % NUM_DISTS], MAX_SIZE,
+    run_distribution_update(dists[LINEAR_DISTRIBUTION], MAX_SIZE,
                             &elapsed_time_update);
-    run_distribution_percentile(dists[i % NUM_DISTS], MAX_SIZE,
+    run_distribution_percentile(dists[LINEAR_DISTRIBUTION], MAX_SIZE,
                                 &elapsed_time_percentile);
-    run_distribution_mixed(dists[i % NUM_DISTS], (MAX_SIZE / 10),
+    run_distribution_mixed(dists[LINEAR_DISTRIBUTION], (MAX_SIZE / 10),
                            &elapsed_time_mixed);
   }
 
   printf("%d,%lf,%lf,%lf\n", num_buckets, (double)elapsed_time_update / 1e9,
+         (double)elapsed_time_percentile / 1e9,
+         (double)elapsed_time_mixed / 1e9);
+
+  elapsed_time_update = 0;
+  elapsed_time_percentile = 0;
+  elapsed_time_mixed = 0;
+
+  for (int i = 0; i < MAX_TURNS; ++i) {
+    run_distribution_update(dists[EXPONENTIAL_DISTRIBUTION], MAX_SIZE,
+                            &elapsed_time_update);
+    run_distribution_percentile(dists[EXPONENTIAL_DISTRIBUTION], MAX_SIZE,
+                                &elapsed_time_percentile);
+    run_distribution_mixed(dists[EXPONENTIAL_DISTRIBUTION], (MAX_SIZE / 10),
+                           &elapsed_time_mixed);
+  }
+
+  printf("%d,%lf,%lf,%lf,", num_buckets, (double)elapsed_time_update / 1e9,
+         (double)elapsed_time_percentile / 1e9,
+         (double)elapsed_time_mixed / 1e9);
+
+  elapsed_time_update = 0;
+  elapsed_time_percentile = 0;
+  elapsed_time_mixed = 0;
+
+  for (int i = 0; i < MAX_TURNS; ++i) {
+    run_distribution_update(dists[CUSTOM_DISTRIBUTION], MAX_SIZE,
+                            &elapsed_time_update);
+    run_distribution_percentile(dists[CUSTOM_DISTRIBUTION], MAX_SIZE,
+                                &elapsed_time_percentile);
+    run_distribution_mixed(dists[CUSTOM_DISTRIBUTION], (MAX_SIZE / 10),
+                           &elapsed_time_mixed);
+  }
+
+  printf("%d,%lf,%lf,%lf,", num_buckets, (double)elapsed_time_update / 1e9,
          (double)elapsed_time_percentile / 1e9,
          (double)elapsed_time_mixed / 1e9);
 
