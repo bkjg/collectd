@@ -28,6 +28,10 @@
 #include <math.h>
 #include <pthread.h>
 
+/* maximum boundary of bucket is exclusive and minimum boundary of bucket is the
+ * maximum boundary of previous bucket inclusive
+ * special cases: minimum boundary of first bucket is 0 and maximum boundary of
+ * last bucket is INFINITY */
 typedef struct {
   double max_boundary;
   uint64_t counter;
