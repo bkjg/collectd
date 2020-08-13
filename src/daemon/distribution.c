@@ -172,35 +172,32 @@ static bucket_t *bucket_new_exponential(size_t num_buckets, double base,
 
 static bucket_t *bucket_new_custom(size_t num_boundaries,
                                    const double *custom_buckets_boundaries) {
+  if (num_boundaries > 0) {
+    if (custom_buckets_boundaries[0] <= 0 ||
+        custom_buckets_boundaries[0] == INFINITY) {
+      errno = EINVAL;
+      return NULL;
+    }
+
+    for (size_t i = 1; i < num_boundaries; ++i) {
+      if (custom_buckets_boundaries[i] <= 0 ||
+          custom_buckets_boundaries[i] == INFINITY ||
+          custom_buckets_boundaries[i - 1] >= custom_buckets_boundaries[i]) {
+        errno = EINVAL;
+        return NULL;
+      }
+    }
+  }
+
   bucket_t *buckets = calloc(num_boundaries + 1, sizeof(bucket_t));
 
   if (buckets == NULL) {
     return NULL;
   }
 
-  if (num_boundaries > 0) {
-    if (custom_buckets_boundaries[0] <= 0 ||
-        custom_buckets_boundaries[0] == INFINITY) {
-      free(buckets);
-      errno = EINVAL;
-      return NULL;
-    }
-
-    buckets[0].max_boundary = custom_buckets_boundaries[0];
-
-    for (size_t i = 1; i < num_boundaries; ++i) {
-      if (custom_buckets_boundaries[i] <= 0 ||
-          custom_buckets_boundaries[i] == INFINITY ||
-          custom_buckets_boundaries[i - 1] >= custom_buckets_boundaries[i]) {
-        free(buckets);
-        errno = EINVAL;
-        return NULL;
-      }
-
-      buckets[i].max_boundary = custom_buckets_boundaries[i];
-    }
+  for (size_t i = 0; i < num_boundaries; ++i) {
+    buckets[i].max_boundary = custom_buckets_boundaries[i];
   }
-
   buckets[num_boundaries].max_boundary = INFINITY;
 
   return buckets;
