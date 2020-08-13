@@ -351,6 +351,11 @@ double distribution_average(distribution_t *d) {
 
   pthread_mutex_lock(&d->mutex);
 
+  if (d->buckets[d->num_buckets - 1].counter == 0) {
+    pthread_mutex_unlock(&d->mutex);
+    return NAN;
+  }
+
   double average =
       d->sum_gauges / (double)d->buckets[d->num_buckets - 1].counter;
 
