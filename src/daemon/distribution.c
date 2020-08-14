@@ -118,16 +118,22 @@ bool distribution_check_equal(distribution_t *d1, distribution_t *d2) {
   pthread_mutex_lock(&d2->mutex);
 
   if (d1->sum_gauges != d2->sum_gauges) {
+    pthread_mutex_unlock(&d2->mutex);
+    pthread_mutex_unlock(&d1->mutex);
     return false;
   }
 
   if (d1->num_buckets != d2->num_buckets) {
+    pthread_mutex_unlock(&d2->mutex);
+    pthread_mutex_unlock(&d1->mutex);
     return false;
   }
 
   for (size_t i = 0; i < d1->num_buckets; ++i) {
     if (d1->buckets[i].max_boundary != d2->buckets[i].max_boundary ||
         d1->buckets[i].counter != d2->buckets[i].counter) {
+      pthread_mutex_unlock(&d2->mutex);
+      pthread_mutex_unlock(&d1->mutex);
       return false;
     }
   }
