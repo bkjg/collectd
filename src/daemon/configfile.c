@@ -314,6 +314,8 @@ static int dispatch_loadplugin(oconfig_item_t *ci) {
   /* reset to the "global" context */
   plugin_set_ctx(old_ctx);
 
+  free(ctx.name);
+
   return ret_val;
 } /* int dispatch_value_loadplugin */
 
