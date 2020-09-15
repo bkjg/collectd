@@ -61,6 +61,7 @@ static oconfig_item_t *oconfig_parse_fh(FILE *fh) {
 
   status = yyparse();
   if (status != 0) {
+    oconfig_free(ci_root);
     fprintf(stderr, "yyparse returned error #%i\n", status);
     return NULL;
   }
