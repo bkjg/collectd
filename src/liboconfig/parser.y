@@ -185,12 +185,6 @@ block:
 statement:
 	option		{$$ = $1;}
 	| block		{$$ = $1;}
-	| identifier
-    {
-        printf("identifier: %s require arguments. Skipping.\n", $1);
-        free($1);
-        $$.values_num = 0;
-    }
 	| EOL		{$$.values_num = 0;}
 	;
 
